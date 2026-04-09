@@ -349,7 +349,7 @@
         : p.badge === "promo"
         ? `<span class="badge badge-promo">Promo</span>`
         : `<span style="color:var(--muted);font-size:12px;">—</span>`;
-      const preco = parseFloat((p.preco || "").toString().replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+      const preco = parseBRPreco(p.preco);
       tr.innerHTML = `
         <td>${fotoHtml}</td>
         <td style="font-weight:500">${p.nome || ""}</td>
@@ -415,8 +415,8 @@
     abrirModal("Editar produto");
     document.getElementById("campo-nome").value = p.nome || "";
     document.getElementById("campo-categoria").value = p.categoria || "";
-    const preco = parseFloat((p.preco || "").toString().replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
-    document.getElementById("campo-preco").value = preco || "";
+    const preco = parseBRPreco(p.preco);
+    document.getElementById("campo-preco").value = preco ? preco.toFixed(2).replace(".", ",") : "";
     document.getElementById("campo-desc").value = p.descricao || "";
     document.getElementById("campo-badge").value = p.badge || "";
     document.getElementById("campo-estoque").value = p.estoque ?? "";
@@ -472,6 +472,15 @@
     return resp.url;
   }
 
+  /* ── Parse preço formato BR ─────────────────────────── */
+  function parseBRPreco(str) {
+    let s = (str || "").toString().replace(/[^\d.,]/g, "").trim();
+    if (s.includes(",")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    }
+    return parseFloat(s) || 0;
+  }
+
   /* ── Salvar ─────────────────────────────────────────── */
   async function salvar() {
     const nome = document.getElementById("campo-nome").value.trim();
@@ -488,12 +497,11 @@
 
     try {
       const urlFoto = await fazerUploadSePreciso();
-      const precoNumerico = parseFloat(preco.replace(/\./g, "").replace(",", "."));
       const dados = {
         senha,
         nome,
         categoria,
-        preco: precoNumerico,
+        preco: parseBRPreco(preco),
         descricao: document.getElementById("campo-desc").value.trim(),
         imagem: urlFoto,
         badge: document.getElementById("campo-badge").value,
