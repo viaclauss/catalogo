@@ -390,7 +390,7 @@
     //   2. Arquivo → Compartilhar → Publicar na web
     //   3. Escolha "Planilha inteira" e formato "Valores separados por vírgula (.csv)"
     //   4. Clique em Publicar e copie o link aqui
-    sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_LdiAMOmESy6itG4E8O1zd4oPuQlBHZNoKBqj-kAv1aqXw8yEMwxG1igBry04IRF63kIwBKHpvH2/pub?output=csv",
+    sheetCsvUrl: "https://docs.google.com/spreadsheets/d/SEU_ID_AQUI/pub?output=csv",
 
     // Colunas esperadas na planilha (nomes exatos no cabeçalho):
     // nome | categoria | preco | descricao | imagem | badge | estoque
@@ -502,7 +502,7 @@
       const cols = parseLinha(linha);
       const obj = {};
       cabecalho.forEach((key, i) => obj[key] = (cols[i] || "").trim().replace(/^"|"$/g, ""));
-      obj.preco = parseFloat((obj.preco || "").replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+      obj.preco = parseFloat((obj.preco || "").replace(/[^0-9.,]/g, "").replace(",", ".")) || 0;
       obj.estoque = obj.estoque !== "" && obj.estoque !== undefined ? parseInt(obj.estoque) : 99;
       return obj;
     }).filter(p => p.nome);
