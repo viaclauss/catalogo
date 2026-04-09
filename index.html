@@ -8,7 +8,7 @@
     /* ── Configurações da loja ─────────────────────────── */
     /* Edite as variáveis abaixo para personalizar */
     :root {
-      --loja-nome: "Minha Loja";
+      --loja-nome: "ViaClauss";
       --cor-primaria: #7F77DD;
       --cor-primaria-dark: #534AB7;
       --cor-fundo: #f8f7fc;
@@ -368,122 +368,6 @@
       #grade { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       #painel-carrinho { max-width: 100%; }
     }
-
-    /* ── Painel de detalhes do produto ──────────────────── */
-    #painel-detalhe {
-      display: none;
-      position: fixed; inset: 0;
-      z-index: 250;
-      background: rgba(0,0,0,0.45);
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-    #painel-detalhe.visivel { display: flex; }
-    .detalhe-box {
-      background: #fff;
-      border-radius: var(--raio);
-      width: 100%; max-width: 900px;
-      max-height: 90vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--cor-borda);
-    }
-    .detalhe-header {
-      padding: 0.875rem 1.25rem;
-      border-bottom: 1px solid var(--cor-borda);
-      display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .detalhe-header span { font-size: 13px; color: var(--cor-texto-muted); }
-    .detalhe-fechar {
-      background: none; border: none; font-size: 22px;
-      cursor: pointer; color: var(--cor-texto-muted); line-height: 1;
-    }
-    .detalhe-corpo {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      overflow: hidden;
-      flex: 1;
-    }
-    .detalhe-esq {
-      background: #f0eef9;
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden;
-      min-height: 300px;
-    }
-    .detalhe-esq img {
-      width: 100%; height: 100%;
-      object-fit: contain;
-      max-height: 500px;
-    }
-    .detalhe-esq-placeholder { font-size: 80px; }
-    .detalhe-dir {
-      display: flex; flex-direction: column;
-      overflow: hidden;
-    }
-    .detalhe-info {
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--cor-borda);
-      flex-shrink: 0;
-    }
-    .detalhe-cat {
-      font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--cor-texto-muted);
-      margin-bottom: 6px;
-    }
-    .detalhe-nome { font-size: 22px; font-weight: 500; margin-bottom: 8px; line-height: 1.2; }
-    .detalhe-desc { font-size: 14px; color: var(--cor-texto-muted); line-height: 1.6; margin-bottom: 16px; }
-    .detalhe-preco { font-size: 26px; font-weight: 600; color: var(--cor-primaria-dark); margin-bottom: 16px; }
-    .detalhe-badge { display: inline-block; margin-left: 10px; font-size: 12px; }
-    .detalhe-estoque { font-size: 12px; color: var(--cor-texto-muted); margin-bottom: 16px; }
-    .btn-add-detalhe {
-      width: 100%; padding: 12px;
-      background: var(--cor-primaria); color: #fff;
-      border: none; border-radius: 8px;
-      font-size: 15px; cursor: pointer;
-      transition: background 0.12s;
-    }
-    .btn-add-detalhe:hover { background: var(--cor-primaria-dark); }
-    .btn-add-detalhe:disabled { background: #ccc; cursor: default; }
-    .detalhe-relacionados {
-      flex: 1; overflow-y: auto;
-      padding: 1rem 1.25rem;
-    }
-    .rel-titulo {
-      font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.06em; color: var(--cor-texto-muted);
-      margin-bottom: 10px;
-    }
-    .rel-grade {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 8px;
-    }
-    .rel-card {
-      background: var(--cor-fundo);
-      border-radius: 8px; border: 1px solid var(--cor-borda);
-      overflow: hidden; cursor: pointer;
-      transition: border-color 0.12s;
-    }
-    .rel-card:hover { border-color: var(--cor-primaria); }
-    .rel-card.ativo { border-color: var(--cor-primaria); border-width: 2px; }
-    .rel-img {
-      width: 100%; aspect-ratio: 3/4;
-      object-fit: cover; background: #f0eef9;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-    }
-    .rel-img img { width: 100%; height: 100%; object-fit: cover; }
-    .rel-nome { font-size: 11px; padding: 5px 6px; font-weight: 500; line-height: 1.3; }
-    .rel-preco { font-size: 11px; padding: 0 6px 6px; color: var(--cor-primaria-dark); font-weight: 500; }
-
-    @media (max-width: 650px) {
-      .detalhe-corpo { grid-template-columns: 1fr; }
-      .detalhe-esq { max-height: 240px; }
-      .detalhe-relacionados { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -494,11 +378,11 @@
 <script>
   const CONFIG = {
     // Nome da loja (aparece no topo)
-    nomeLoja: "Minha Loja",
+    nomeLoja: "ViaClauss",
 
     // Número do WhatsApp da loja (só números, com DDI e DDD)
     // Exemplo: "5541999998888" para Curitiba/PR
-    whatsapp: "5541999998888",
+    whatsapp: "5543998155361",
 
     // URL CSV da sua planilha Google Sheets publicada.
     // Como obter:
@@ -542,36 +426,6 @@
 </main>
 
 <div id="overlay"></div>
-
-<!-- Painel de detalhes do produto -->
-<div id="painel-detalhe">
-  <div class="detalhe-box">
-    <div class="detalhe-header">
-      <span id="detalhe-breadcrumb"></span>
-      <button class="detalhe-fechar" id="btn-fechar-detalhe">×</button>
-    </div>
-    <div class="detalhe-corpo">
-      <div class="detalhe-esq" id="detalhe-img-wrap"></div>
-      <div class="detalhe-dir">
-        <div class="detalhe-info">
-          <p class="detalhe-cat" id="detalhe-cat"></p>
-          <h2 class="detalhe-nome" id="detalhe-nome"></h2>
-          <p class="detalhe-desc" id="detalhe-desc"></p>
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
-            <span class="detalhe-preco" id="detalhe-preco"></span>
-            <span class="detalhe-badge" id="detalhe-badge"></span>
-          </div>
-          <p class="detalhe-estoque" id="detalhe-estoque"></p>
-          <button class="btn-add-detalhe" id="btn-add-detalhe">+ Adicionar ao carrinho</button>
-        </div>
-        <div class="detalhe-relacionados">
-          <p class="rel-titulo">Mais da mesma categoria</p>
-          <div class="rel-grade" id="rel-grade"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Painel do carrinho -->
 <div id="painel-carrinho">
@@ -742,12 +596,8 @@
         </div>`;
 
       if (!semEstoque) {
-        card.querySelector(".btn-add").addEventListener("click", (e) => {
-          e.stopPropagation();
-          adicionarAoCarrinho(prod);
-        });
+        card.querySelector(".btn-add").addEventListener("click", () => adicionarAoCarrinho(prod));
       }
-      card.addEventListener("click", () => abrirDetalhe(prod));
       grade.appendChild(card);
     });
   }
@@ -755,8 +605,12 @@
   /* ── Carrinho ──────────────────────────────────────────── */
   function adicionarAoCarrinho(prod) {
     const existente = carrinho.find(i => i.nome === prod.nome);
-    if (existente) { existente.qtd++; }
-    else { carrinho.push({ ...prod, qtd: 1 }); }
+    if (existente) {
+      if (existente.qtd >= prod.estoque) return;
+      existente.qtd++;
+    } else {
+      carrinho.push({ ...prod, qtd: 1 });
+    }
     atualizarCarrinho();
     abrirCarrinho();
   }
@@ -883,68 +737,6 @@
     document.getElementById("campo-nome").value = "";
     document.getElementById("campo-fone").value = "";
     document.getElementById("campo-obs").value = "";
-  });
-
-  /* ── Painel de detalhes ────────────────────────────────── */
-  function abrirDetalhe(prod) {
-    // Imagem
-    const imgWrap = document.getElementById("detalhe-img-wrap");
-    imgWrap.innerHTML = prod.imagem
-      ? `<img src="${prod.imagem}" alt="${prod.nome}" />`
-      : `<div class="detalhe-esq-placeholder">🧥</div>`;
-
-    // Info
-    document.getElementById("detalhe-breadcrumb").textContent = prod.categoria || "";
-    document.getElementById("detalhe-cat").textContent = prod.categoria || "";
-    document.getElementById("detalhe-nome").textContent = prod.nome;
-    document.getElementById("detalhe-desc").textContent = prod.descricao || "";
-    document.getElementById("detalhe-preco").textContent = `R$ ${prod.preco.toFixed(2).replace(".", ",")}`;
-
-    const badge = document.getElementById("detalhe-badge");
-    badge.className = "detalhe-badge";
-    if (prod.badge === "novo") { badge.textContent = "Novo"; badge.classList.add("badge", "badge-novo"); }
-    else if (prod.badge === "promo") { badge.textContent = "Promo"; badge.classList.add("badge", "badge-promo"); }
-    else badge.textContent = "";
-
-    const semEstoque = prod.estoque <= 0;
-    document.getElementById("detalhe-estoque").textContent = semEstoque
-      ? "Sem estoque"
-      : prod.estoque < 99 ? `${prod.estoque} disponíveis` : "";
-
-    const btnAdd = document.getElementById("btn-add-detalhe");
-    btnAdd.disabled = semEstoque;
-    btnAdd.textContent = semEstoque ? "Sem estoque" : "+ Adicionar ao carrinho";
-    btnAdd.onclick = () => { adicionarAoCarrinho(prod); fecharDetalhe(); };
-
-    // Relacionados
-    const relGrade = document.getElementById("rel-grade");
-    relGrade.innerHTML = "";
-    const relacionados = produtos.filter(p => p.categoria === prod.categoria && p.nome !== prod.nome);
-    if (relacionados.length === 0) {
-      relGrade.innerHTML = `<p style="font-size:12px;color:var(--cor-texto-muted)">Nenhum outro produto nesta categoria.</p>`;
-    } else {
-      relacionados.forEach(rel => {
-        const div = document.createElement("div");
-        div.className = "rel-card";
-        div.innerHTML = `
-          <div class="rel-img">${rel.imagem ? `<img src="${rel.imagem}" alt="${rel.nome}" loading="lazy" />` : "🧥"}</div>
-          <p class="rel-nome">${rel.nome}</p>
-          <p class="rel-preco">R$ ${rel.preco.toFixed(2).replace(".", ",")}</p>`;
-        div.addEventListener("click", () => abrirDetalhe(rel));
-        relGrade.appendChild(div);
-      });
-    }
-
-    document.getElementById("painel-detalhe").classList.add("visivel");
-  }
-
-  function fecharDetalhe() {
-    document.getElementById("painel-detalhe").classList.remove("visivel");
-  }
-
-  document.getElementById("btn-fechar-detalhe").addEventListener("click", fecharDetalhe);
-  document.getElementById("painel-detalhe").addEventListener("click", function(e) {
-    if (e.target === this) fecharDetalhe();
   });
 
   /* ── Arranque ──────────────────────────────────────────── */
