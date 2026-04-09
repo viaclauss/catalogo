@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Catálogo</title>
+  <style>
+    :root {
+      --pri: #7F77DD;
+      --pri-dark: #534AB7;
+      --fundo: #f8f7fc;
+      --card: #ffffff;
+      --texto: #1a1a1a;
+      --muted: #6b6b6b;
+      --borda: #e0dff5;
+      --danger: #dc3545;
+      --raio: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--fundo); color: var(--texto); min-height: 100vh; }
+
+    /* ── Login ── */
+    #tela-login {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .login-box {
+      background: var(--card); border-radius: var(--raio); border: 1px solid var(--borda);
+      padding: 2rem; width: 100%; max-width: 360px;
+    }
+    .login-box h1 { font-size: 20px; font-weight: 500; margin-bottom: 1.5rem; text-align: center; }
+
+    /* ── Admin ── */
+    #tela-admin { display: none; }
+    header {
+      background: #fff; border-bottom: 1px solid var(--borda);
+      padding: 0 1.5rem; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 17px; font-weight: 600; color: var(--pri-dark); }
+    header button { font-size: 13px; }
+
+    main { max-width: 1000px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    /* ── Botão adicionar ── */
+    #btn-novo {
+      background: var(--pri); color: #fff; border: none;
+      border-radius: 99px; padding: 9px 20px; font-size: 14px;
+      cursor: pointer; margin-bottom: 1.5rem;
+    }
+    #btn-novo:hover { background: var(--pri-dark); }
+
+    /* ── Tabela ── */
+    .tabela-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: var(--raio); overflow: hidden; border: 1px solid var(--borda); }
+    thead { background: var(--fundo); }
+    th { padding: 10px 14px; font-size: 12px; font-weight: 500; color: var(--muted); text-align: left; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+    td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--borda); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #faf9fe; }
+    .td-foto img { width: 40px; height: 52px; object-fit: cover; border-radius: 6px; background: var(--fundo); }
+    .td-foto-vazia { width: 40px; height: 52px; border-radius: 6px; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+    .badge-novo { background: #E1F5EE; color: #085041; }
+    .badge-promo { background: #FCEBEB; color: #791F1F; }
+    .acoes { display: flex; gap: 6px; }
+    .btn-editar, .btn-remover {
+      border: 1px solid var(--borda); background: none;
+      border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+    }
+    .btn-editar:hover { border-color: var(--pri); color: var(--pri); }
+    .btn-remover:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Overlay + Modal ── */
+    #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; }
+    #overlay.vis { display: block; }
+    #modal {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    #modal.vis { display: flex; }
+    .modal-box {
+      background: var(--card); border-radius: var(--raio);
+      width: 100%; max-width: 520px; max-height: 90vh;
+      overflow-y: auto; border: 1px solid var(--borda);
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--borda);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: var(--card); z-index: 1;
+    }
+    .modal-header h2 { font-size: 16px; font-weight: 500; }
+    .modal-fechar { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); line-height: 1; }
+    .modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 14px; }
+    .modal-footer {
+      padding: 1rem 1.5rem; border-top: 1px solid var(--borda);
+      display: flex; gap: 10px; justify-content: flex-end;
+      position: sticky; bottom: 0; background: var(--card);
+    }
+
+    /* ── Campos ── */
+    .campo label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .campo input, .campo select, .campo textarea {
+      width: 100%; padding: 9px 12px; border-radius: 8px;
+      border: 1px solid var(--borda); font-size: 14px;
+      font-family: inherit; color: var(--texto); background: #fff; outline: none;
+    }
+    .campo input:focus, .campo select:focus, .campo textarea:focus { border-color: var(--pri); }
+    .campo textarea { resize: vertical; min-height: 60px; }
+    .linha-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Upload foto ── */
+    .upload-area {
+      border: 2px dashed var(--borda); border-radius: 10px;
+      padding: 1.25rem; text-align: center; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .upload-area:hover { border-color: var(--pri); }
+    .upload-area input { display: none; }
+    .upload-preview { width: 80px; height: 104px; object-fit: cover; border-radius: 8px; margin: 0 auto 8px; display: block; }
+    .upload-texto { font-size: 13px; color: var(--muted); }
+    .upload-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    #prog-wrap { display: none; margin-top: 8px; }
+    #prog-barra { height: 4px; background: var(--pri); border-radius: 2px; width: 0%; transition: width 0.3s; }
+
+    /* ── Botões ── */
+    .btn { padding: 9px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; border: 1px solid var(--borda); background: none; color: var(--muted); }
+    .btn:hover { background: var(--fundo); }
+    .btn-pri { background: var(--pri); color: #fff; border-color: var(--pri); }
+    .btn-pri:hover { background: var(--pri-dark); border-color: var(--pri-dark); }
+    .btn-pri:disabled { background: #ccc; border-color: #ccc; cursor: default; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      background: #222; color: #fff; padding: 10px 20px;
+      border-radius: 99px; font-size: 13px; z-index: 999;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap;
+    }
+    #toast.vis { opacity: 1; }
+
+    /* ── Loading ── */
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--borda); border-top-color: var(--pri); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 3rem auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Campos comuns ── */
+    .campo-senha { position: relative; }
+    .campo-senha input { padding-right: 40px; }
+    .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     ⚙️  CONFIGURAÇÃO
+  ══════════════════════════════════════════ -->
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbzBxZS2Fu3J-9kdXGj2-yLZAP0Qv_aBBhP13qV7J9Drg3elVwrmXrszTcKcXHHdneEy/exec";
+</script>
+<!-- ══════════════════════════════════════════ -->
+
+<!-- Tela de login -->
+<div id="tela-login">
+  <div class="login-box">
+    <h1>🔒 Painel Admin</h1>
+    <div class="campo" style="margin-bottom:1rem;">
+      <label>Senha</label>
+      <div class="campo-senha">
+        <input type="password" id="input-senha" placeholder="Digite a senha" />
+        <button class="olho" onclick="toggleSenha()">👁</button>
+      </div>
+    </div>
+    <button class="btn btn-pri" style="width:100%" id="btn-login">Entrar</button>
+    <p id="erro-login" style="color:#dc3545;font-size:13px;margin-top:10px;text-align:center;display:none">Senha incorreta.</p>
+  </div>
+</div>
+
+<!-- Tela admin -->
+<div id="tela-admin">
+  <header>
+    <div class="logo">⚙️ Admin — Catálogo</div>
+    <button class="btn" onclick="sair()">Sair</button>
+  </header>
+  <main>
+    <button id="btn-novo" onclick="abrirModal()">+ Novo produto</button>
+    <div class="tabela-wrap">
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th>Foto</th>
+            <th>Nome</th>
+            <th>Categoria</th>
+            <th>Preço</th>
+            <th>Descrição</th>
+            <th>Badge</th>
+            <th>Estoque</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="loading" class="spinner"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Overlay -->
+<div id="overlay" onclick="fecharModal()"></div>
+
+<!-- Modal adicionar/editar -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modal-titulo">Novo produto</h2>
+      <button class="modal-fechar" onclick="fecharModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="campo">
+        <label>Foto do produto</label>
+        <div class="upload-area" id="upload-area" onclick="document.getElementById('input-foto').click()">
+          <input type="file" id="input-foto" accept="image/*" onchange="previewFoto(this)" />
+          <img id="preview-img" class="upload-preview" style="display:none" />
+          <div id="upload-placeholder">
+            <div style="font-size:32px;margin-bottom:8px;">📷</div>
+            <p class="upload-texto">Clique para escolher uma foto</p>
+            <p class="upload-sub">JPG, PNG ou WEBP — máx. 5MB</p>
+          </div>
+        </div>
+        <div id="prog-wrap"><div style="background:var(--borda);border-radius:2px;height:4px;"><div id="prog-barra"></div></div></div>
+        <input type="hidden" id="campo-imagem" />
+      </div>
+
+      <div class="campo">
+        <label>Nome *</label>
+        <input type="text" id="campo-nome" placeholder="Ex: Vestido Linho" />
+      </div>
+
+      <div class="linha-2">
+        <div class="campo">
+          <label>Categoria *</label>
+          <input type="text" id="campo-categoria" placeholder="Ex: Vestidos" />
+        </div>
+        <div class="campo">
+          <label>Preço *</label>
+          <input type="number" id="campo-preco" placeholder="Ex: 189.90" step="0.01" min="0" />
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Descrição</label>
+        <textarea id="campo-desc" placeholder="Detalhes da peça, material, cores disponíveis…"></textarea>
+      </div>
+
+      <div class="linha-2">
+        <div class="campo">
+          <label>Badge</label>
+          <select id="campo-badge">
+            <option value="">Nenhum</option>
+            <option value="novo">Novo</option>
+            <option value="promo">Promo</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Estoque</label>
+          <input type="number" id="campo-estoque" placeholder="Ex: 10" min="0" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-pri" id="btn-salvar" onclick="salvar()">Salvar produto</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let senha = "";
+  let linhaEditando = null;
+  let fotoUploadUrl = "";
+
+  /* ── Login ─────────────────────────────────────────── */
+  document.getElementById("input-senha").addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+  });
+  document.getElementById("btn-login").addEventListener("click", login);
+
+  async function login() {
+    const s = document.getElementById("input-senha").value.trim();
+    if (!s) return;
+    document.getElementById("btn-login").disabled = true;
+    document.getElementById("btn-login").textContent = "Verificando…";
+    const res = await api({ acao: "listar", senha: s });
+    document.getElementById("btn-login").disabled = false;
+    document.getElementById("btn-login").textContent = "Entrar";
+    if (res.ok) {
+      senha = s;
+      document.getElementById("tela-login").style.display = "none";
+      document.getElementById("tela-admin").style.display = "block";
+      renderTabela(res.produtos);
+      document.getElementById("loading").style.display = "none";
+    } else {
+      document.getElementById("erro-login").style.display = "block";
+    }
+  }
+
+  function sair() {
+    senha = "";
+    document.getElementById("tela-login").style.display = "flex";
+    document.getElementById("tela-admin").style.display = "none";
+    document.getElementById("input-senha").value = "";
+  }
+
+  function toggleSenha() {
+    const inp = document.getElementById("input-senha");
+    inp.type = inp.type === "password" ? "text" : "password";
+  }
+
+  /* ── API ────────────────────────────────────────────── */
+  async function api(dados) {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(dados)
+      });
+      return await res.json();
+    } catch (e) {
+      return { ok: false, erro: e.message };
+    }
+  }
+
+  /* ── Tabela ─────────────────────────────────────────── */
+  function renderTabela(produtos) {
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+    if (!produtos || produtos.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum produto cadastrado.</td></tr>`;
+      return;
+    }
+    produtos.forEach(p => {
+      const tr = document.createElement("tr");
+      const fotoHtml = p.imagem
+        ? `<img src="${p.imagem}" style="width:40px;height:52px;object-fit:cover;border-radius:6px;" />`
+        : `<div style="width:40px;height:52px;border-radius:6px;background:#f0eef9;display:flex;align-items:center;justify-content:center;font-size:18px;">🧥</div>`;
+      const badgeHtml = p.badge === "novo"
+        ? `<span class="badge badge-novo">Novo</span>`
+        : p.badge === "promo"
+        ? `<span class="badge badge-promo">Promo</span>`
+        : `<span style="color:var(--muted);font-size:12px;">—</span>`;
+      const preco = parseFloat((p.preco || "").toString().replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+      tr.innerHTML = `
+        <td>${fotoHtml}</td>
+        <td style="font-weight:500">${p.nome || ""}</td>
+        <td>${p.categoria || ""}</td>
+        <td>R$ ${preco.toFixed(2).replace(".", ",")}</td>
+        <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.descricao || ""}</td>
+        <td>${badgeHtml}</td>
+        <td>${p.estoque ?? ""}</td>
+        <td>
+          <div class="acoes">
+            <button class="btn-editar" onclick='editarProduto(${JSON.stringify(p)})'>Editar</button>
+            <button class="btn-remover" onclick="removerProduto(${p.linha}, this)">Remover</button>
+          </div>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function recarregar() {
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("tbody").innerHTML = "";
+    const res = await api({ acao: "listar", senha });
+    document.getElementById("loading").style.display = "none";
+    if (res.ok) renderTabela(res.produtos);
+    else toast("Erro ao carregar: " + res.erro);
+  }
+
+  /* ── Modal ──────────────────────────────────────────── */
+  function abrirModal(titulo = "Novo produto") {
+    document.getElementById("modal-titulo").textContent = titulo;
+    document.getElementById("overlay").classList.add("vis");
+    document.getElementById("modal").classList.add("vis");
+  }
+
+  function fecharModal() {
+    document.getElementById("modal").classList.remove("vis");
+    document.getElementById("overlay").classList.remove("vis");
+    limparModal();
+  }
+
+  function limparModal() {
+    linhaEditando = null;
+    fotoUploadUrl = "";
+    document.getElementById("campo-nome").value = "";
+    document.getElementById("campo-categoria").value = "";
+    document.getElementById("campo-preco").value = "";
+    document.getElementById("campo-desc").value = "";
+    document.getElementById("campo-badge").value = "";
+    document.getElementById("campo-estoque").value = "";
+    document.getElementById("campo-imagem").value = "";
+    document.getElementById("preview-img").style.display = "none";
+    document.getElementById("upload-placeholder").style.display = "block";
+    document.getElementById("input-foto").value = "";
+    document.getElementById("prog-wrap").style.display = "none";
+    document.getElementById("prog-barra").style.width = "0%";
+    document.getElementById("btn-salvar").disabled = false;
+    document.getElementById("btn-salvar").textContent = "Salvar produto";
+  }
+
+  function editarProduto(p) {
+    linhaEditando = p.linha;
+    fotoUploadUrl = p.imagem || "";
+    abrirModal("Editar produto");
+    document.getElementById("campo-nome").value = p.nome || "";
+    document.getElementById("campo-categoria").value = p.categoria || "";
+    const preco = parseFloat((p.preco || "").toString().replace(/[^0-9,]/g, "").replace(",", ".")) || 0;
+    document.getElementById("campo-preco").value = preco || "";
+    document.getElementById("campo-desc").value = p.descricao || "";
+    document.getElementById("campo-badge").value = p.badge || "";
+    document.getElementById("campo-estoque").value = p.estoque ?? "";
+    document.getElementById("campo-imagem").value = p.imagem || "";
+    if (p.imagem) {
+      document.getElementById("preview-img").src = p.imagem;
+      document.getElementById("preview-img").style.display = "block";
+      document.getElementById("upload-placeholder").style.display = "none";
+    }
+  }
+
+  /* ── Upload foto ────────────────────────────────────── */
+  function previewFoto(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast("Foto muito grande — máx. 5MB"); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById("preview-img").src = e.target.result;
+      document.getElementById("preview-img").style.display = "block";
+      document.getElementById("upload-placeholder").style.display = "none";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function fazerUploadSePreciso() {
+    const input = document.getElementById("input-foto");
+    if (!input.files[0]) return fotoUploadUrl;
+
+    const file = input.files[0];
+    document.getElementById("prog-wrap").style.display = "block";
+    document.getElementById("prog-barra").style.width = "30%";
+
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(",")[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+    document.getElementById("prog-barra").style.width = "60%";
+
+    const resp = await api({
+      acao: "upload",
+      senha,
+      nome: file.name,
+      base64,
+      tipo: file.type
+    });
+
+    document.getElementById("prog-barra").style.width = "100%";
+    if (!resp.ok) throw new Error(resp.erro || "Falha no upload");
+    return resp.url;
+  }
+
+  /* ── Salvar ─────────────────────────────────────────── */
+  async function salvar() {
+    const nome = document.getElementById("campo-nome").value.trim();
+    const categoria = document.getElementById("campo-categoria").value.trim();
+    const preco = document.getElementById("campo-preco").value.trim();
+
+    if (!nome || !categoria || !preco) {
+      toast("Preencha nome, categoria e preço"); return;
+    }
+
+    const btn = document.getElementById("btn-salvar");
+    btn.disabled = true;
+    btn.textContent = "Salvando…";
+
+    try {
+      const urlFoto = await fazerUploadSePreciso();
+      const dados = {
+        senha,
+        nome,
+        categoria,
+        preco,
+        descricao: document.getElementById("campo-desc").value.trim(),
+        imagem: urlFoto,
+        badge: document.getElementById("campo-badge").value,
+        estoque: document.getElementById("campo-estoque").value || "99"
+      };
+
+      let res;
+      if (linhaEditando) {
+        res = await api({ ...dados, acao: "editar", linha: linhaEditando });
+      } else {
+        res = await api({ ...dados, acao: "adicionar" });
+      }
+
+      if (res.ok) {
+        toast(linhaEditando ? "Produto atualizado!" : "Produto adicionado!");
+        fecharModal();
+        recarregar();
+      } else {
+        toast("Erro: " + res.erro);
+        btn.disabled = false;
+        btn.textContent = "Salvar produto";
+      }
+    } catch (e) {
+      toast("Erro: " + e.message);
+      btn.disabled = false;
+      btn.textContent = "Salvar produto";
+    }
+  }
+
+  /* ── Remover ────────────────────────────────────────── */
+  async function removerProduto(linha, btnEl) {
+    if (!confirm("Remover este produto?")) return;
+    btnEl.disabled = true;
+    const res = await api({ acao: "remover", senha, linha });
+    if (res.ok) { toast("Produto removido!"); recarregar(); }
+    else { toast("Erro: " + res.erro); btnEl.disabled = false; }
+  }
+
+  /* ── Toast ──────────────────────────────────────────── */
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("vis");
+    setTimeout(() => el.classList.remove("vis"), 2800);
+  }
+</script>
+</body>
+</html>
