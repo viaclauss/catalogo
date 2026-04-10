@@ -131,6 +131,13 @@
     .btn-pri:hover { background: var(--pri-dark); border-color: var(--pri-dark); }
     .btn-pri:disabled { background: #ccc; border-color: #ccc; cursor: default; }
 
+    /* ── Variantes ── */
+    .variante-linha { display: grid; grid-template-columns: 1fr 1fr 80px 28px; gap: 6px; align-items: center; }
+    .variante-linha input { padding: 6px 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 13px; font-family: inherit; color: var(--texto); background: #fff; outline: none; width: 100%; }
+    .variante-linha input:focus { border-color: var(--pri); }
+    .btn-del-var { background: none; border: 1px solid var(--borda); border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 14px; height: 32px; width: 28px; display: flex; align-items: center; justify-content: center; }
+    .btn-del-var:hover { border-color: var(--danger); color: var(--danger); }
+
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
@@ -266,6 +273,13 @@
           <input type="number" id="campo-estoque" placeholder="Ex: 10" min="0" />
         </div>
       </div>
+
+      <div class="campo">
+        <label>Variantes <span style="font-size:11px;color:var(--muted);font-weight:400">(Cor / Tamanho / Qtd — deixe vazio para não usar)</span></label>
+        <div id="lista-variantes" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+        <button type="button" onclick="adicionarLinhaVariante()" style="font-size:12px;padding:5px 14px;border:1px dashed var(--borda);background:none;border-radius:6px;cursor:pointer;color:var(--muted)">+ Adicionar variante</button>
+        <div style="margin-top:6px;font-size:12px;color:var(--muted)" id="estoque-total-info"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="fecharModal()">Cancelar</button>
@@ -332,14 +346,36 @@
   }
 
   /* ── Tabela ─────────────────────────────────────────── */
+  /* ── Helpers ────────────────────────────────────────── */
+  function parseBRPreco(str) {
+    let s = (str || "").toString().replace(/[^\d.,]/g, "").trim();
+    if (!s) return 0;
+    if (s.includes(",")) {
+      s = s.replace(/\./g, "").replace(",", ".");
+    }
+    return parseFloat(s) || 0;
+  }
+
+  function deserializarVariantes(str) {
+    if (!str) return [];
+    return str.split(";").map(p => {
+      const [chave, qtd] = p.split(":");
+      const [cor, tam] = (chave || "").split("/");
+      return { cor: cor?.trim() || "", tam: tam?.trim() || "", qtd: qtd || "0" };
+    }).filter(v => v.cor);
+  }
+
+  let produtosCache = [];
+
   function renderTabela(produtos) {
+    produtosCache = produtos || [];
     const tbody = document.getElementById("tbody");
     tbody.innerHTML = "";
-    if (!produtos || produtos.length === 0) {
+    if (produtosCache.length === 0) {
       tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">Nenhum produto cadastrado.</td></tr>`;
       return;
     }
-    produtos.forEach(p => {
+    produtosCache.forEach((p, idx) => {
       const tr = document.createElement("tr");
       const fotoHtml = p.imagem
         ? `<img src="${p.imagem}" style="width:40px;height:52px;object-fit:cover;border-radius:6px;" />`
@@ -357,13 +393,15 @@
         <td>R$ ${preco.toFixed(2).replace(".", ",")}</td>
         <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.descricao || ""}</td>
         <td>${badgeHtml}</td>
-        <td>${p.estoque ?? ""}</td>
+        <td style="font-size:12px;max-width:140px">${(p.variantes ? deserializarVariantes(p.variantes).map(v => `${v.cor}${v.tam?"/"+v.tam:""}:${v.qtd}`).join(", ") : "") || (p.estoque ?? "")}</td>
         <td>
           <div class="acoes">
-            <button class="btn-editar" onclick='editarProduto(${JSON.stringify(p)})'>Editar</button>
-            <button class="btn-remover" onclick="removerProduto(${p.linha}, this)">Remover</button>
+            <button class="btn-editar" data-idx="${idx}">Editar</button>
+            <button class="btn-remover" data-linha="${p.linha}">Remover</button>
           </div>
         </td>`;
+      tr.querySelector(".btn-editar").addEventListener("click", () => editarProduto(produtosCache[idx]));
+      tr.querySelector(".btn-remover").addEventListener("click", function() { removerProduto(p.linha, this); });
       tbody.appendChild(tr);
     });
   }
@@ -399,6 +437,10 @@
     document.getElementById("campo-desc").value = "";
     document.getElementById("campo-badge").value = "";
     document.getElementById("campo-estoque").value = "";
+    const listaVar = document.getElementById("lista-variantes");
+    if (listaVar) listaVar.innerHTML = "";
+    const infoVar = document.getElementById("estoque-total-info");
+    if (infoVar) infoVar.textContent = "";
     document.getElementById("campo-imagem").value = "";
     document.getElementById("preview-img").style.display = "none";
     document.getElementById("upload-placeholder").style.display = "block";
@@ -419,12 +461,23 @@
     document.getElementById("campo-preco").value = preco ? preco.toFixed(2).replace(".", ",") : "";
     document.getElementById("campo-desc").value = p.descricao || "";
     document.getElementById("campo-badge").value = p.badge || "";
-    document.getElementById("campo-estoque").value = p.estoque ?? "";
     document.getElementById("campo-imagem").value = p.imagem || "";
     if (p.imagem) {
       document.getElementById("preview-img").src = p.imagem;
       document.getElementById("preview-img").style.display = "block";
       document.getElementById("upload-placeholder").style.display = "none";
+    }
+    const listaVar = document.getElementById("lista-variantes");
+    if (listaVar) {
+      listaVar.innerHTML = "";
+      const vars = deserializarVariantes(p.variantes || "");
+      if (vars.length > 0) {
+        vars.forEach(v => adicionarLinhaVariante(v.cor, v.tam, v.qtd));
+      } else {
+        document.getElementById("campo-estoque").value = p.estoque ?? "";
+      }
+    } else {
+      document.getElementById("campo-estoque").value = p.estoque ?? "";
     }
   }
 
@@ -472,13 +525,45 @@
     return resp.url;
   }
 
-  /* ── Parse preço formato BR ─────────────────────────── */
-  function parseBRPreco(str) {
-    let s = (str || "").toString().replace(/[^\d.,]/g, "").trim();
-    if (s.includes(",")) {
-      s = s.replace(/\./g, "").replace(",", ".");
+  /* ── Variantes ──────────────────────────────────────── */
+  function adicionarLinhaVariante(cor = "", tamanho = "", qtd = "") {
+    const lista = document.getElementById("lista-variantes");
+    if (!lista) return;
+    const linha = document.createElement("div");
+    linha.className = "variante-linha";
+    linha.innerHTML = `
+      <input type="text" placeholder="Cor (ex: Preta)" value="${cor}" class="var-cor" />
+      <input type="text" placeholder="Tam. (ex: M)" value="${tamanho}" class="var-tam" />
+      <input type="number" placeholder="Qtd" value="${qtd}" min="0" class="var-qtd" />
+      <button type="button" class="btn-del-var" onclick="this.closest('.variante-linha').remove(); atualizarEstoqueTotal()">✕</button>`;
+    linha.querySelectorAll("input").forEach(i => i.addEventListener("input", atualizarEstoqueTotal));
+    lista.appendChild(linha);
+    atualizarEstoqueTotal();
+  }
+
+  function atualizarEstoqueTotal() {
+    const qtds = [...document.querySelectorAll(".var-qtd")].map(i => parseInt(i.value) || 0);
+    const total = qtds.reduce((s, v) => s + v, 0);
+    const info = document.getElementById("estoque-total-info");
+    const campoEst = document.getElementById("campo-estoque");
+    if (qtds.length > 0) {
+      if (info) info.textContent = `Total calculado: ${total} unidades`;
+      if (campoEst) campoEst.value = total;
+    } else {
+      if (info) info.textContent = "";
     }
-    return parseFloat(s) || 0;
+  }
+
+  function serializarVariantes() {
+    const linhas = document.querySelectorAll(".variante-linha");
+    const partes = [];
+    linhas.forEach(l => {
+      const cor = l.querySelector(".var-cor").value.trim();
+      const tam = l.querySelector(".var-tam").value.trim();
+      const qtd = parseInt(l.querySelector(".var-qtd").value) || 0;
+      if (cor) partes.push(`${cor}${tam ? "/" + tam : ""}:${qtd}`);
+    });
+    return partes.join(";");
   }
 
   /* ── Salvar ─────────────────────────────────────────── */
@@ -497,6 +582,8 @@
 
     try {
       const urlFoto = await fazerUploadSePreciso();
+      const variantesEl = document.getElementById("lista-variantes");
+      const variantes = variantesEl ? serializarVariantes() : "";
       const dados = {
         senha,
         nome,
@@ -505,7 +592,8 @@
         descricao: document.getElementById("campo-desc").value.trim(),
         imagem: urlFoto,
         badge: document.getElementById("campo-badge").value,
-        estoque: document.getElementById("campo-estoque").value || "99"
+        estoque: document.getElementById("campo-estoque").value || "99",
+        variantes
       };
 
       let res;
