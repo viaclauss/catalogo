@@ -1,53 +1,53 @@
-// 1. CONFIGURAÇÕES PRINCIPAIS
-// Aqui ficam os dados vitais da loja. Se o número mudar ou a planilha mudar, é só alterar aqui.
+/* 1. CONFIGURAÇÕES PRINCIPAIS
+/* Aqui ficam os dados vitais da loja. Se o número mudar ou a planilha mudar, é só alterar aqui.
 const CONFIG = {
   nomeLoja: "Via Clauss",
   whatsapp: "5543998155361", 
-  sheetCsvUrl: "https://docs.google.com/..." // O link da sua planilha do Google
+  sheetCsvUrl: "https:/*docs.google.com/..." /* O link da sua planilha do Google
 };
 
-// Variáveis que vão guardar o estado da loja enquanto a pessoa navega
-let produtos = []; // Vai guardar a lista de produtos que vier da planilha
-let carrinho = []; // Vai guardar o que o cliente colocar na sacola
-let categoriaAtiva = ""; // Diz qual aba (Roupas, Semijoias, etc) está selecionada no momento
+/* Variáveis que vão guardar o estado da loja enquanto a pessoa navega
+let produtos = []; /* Vai guardar a lista de produtos que vier da planilha
+let carrinho = []; /* Vai guardar o que o cliente colocar na sacola
+let categoriaAtiva = ""; /* Diz qual aba (Roupas, Semijoias, etc) está selecionada no momento
 
-// 2. BUSCANDO OS PRODUTOS
-// O 'async' significa que o site vai fazer isso em segundo plano, sem travar a tela.
+/* 2. BUSCANDO OS PRODUTOS
+/* O 'async' significa que o site vai fazer isso em segundo plano, sem travar a tela.
 async function carregarProdutos() {
   try {
-    // Tenta ir lá no link do Google Sheets baixar o texto (CSV)
+    /* Tenta ir lá no link do Google Sheets baixar o texto (CSV)
     const res = await fetch(CONFIG.sheetCsvUrl);
     if (!res.ok) throw new Error("Não foi possível carregar a planilha.");
     
-    // Pega o texto da planilha e manda para a função 'parseCsv' para transformar em lista
+    /* Pega o texto da planilha e manda para a função 'parseCsv' para transformar em lista
     produtos = parseCsv(await res.text()); 
     
-    // Depois que os produtos chegaram, ele cria os botões de filtro e desenha as roupas na tela
+    /* Depois que os produtos chegaram, ele cria os botões de filtro e desenha as roupas na tela
     popularFiltros();
     renderizar(); 
   } catch (e) {
-    // Se a internet cair ou o link der erro, mostra essa mensagem na tela
+    /* Se a internet cair ou o link der erro, mostra essa mensagem na tela
     document.getElementById("conteudo").innerHTML = `<p>⚠️ Erro ao carregar produtos.</p>`;
   }
 }
 
-// 3. TRADUZINDO A PLANILHA (CSV para JavaScript)
+/* 3. TRADUZINDO A PLANILHA (CSV para JavaScript)
 function parseCsv(text) {
-  const linhas = text.trim().split("\n"); // Corta o texto em várias linhas
-  const cab = linhas[0].split(","); // Pega a primeira linha, que é o cabeçalho (Nome, Preço, etc)
+  const linhas = text.trim().split("\n"); /* Corta o texto em várias linhas
+  const cab = linhas[0].split(","); /* Pega a primeira linha, que é o cabeçalho (Nome, Preço, etc)
   
-  // Pega do produto 1 em diante e transforma num formato que o site entende (Objetos)
+  /* Pega do produto 1 em diante e transforma num formato que o site entende (Objetos)
   return linhas.slice(1).map(linha => {
     const cols = parseLinha(linha); 
     const obj = {};
     cab.forEach((key, i) => obj[key] = (cols[i] || ""));
     
-    // Tratamento matemático: Transforma os preços que estão escritos "R$ 100,00" no número 100
+    /* Tratamento matemático: Transforma os preços que estão escritos "R$ 100,00" no número 100
     const ps = (obj.preco || "").toString().replace(/[^\d.,]/g, "").trim();
     obj.preco = parseFloat(ps) || 0;
     
-    // Vê quanto tem no estoque (se estiver vazio na planilha, ele finge que tem 99)
+    /* Vê quanto tem no estoque (se estiver vazio na planilha, ele finge que tem 99)
     obj.estoque = obj.estoque !== "" && obj.estoque !== undefined ? parseInt(obj.estoque) : 99;
     return obj;
-  }).filter(p => p.nome); // Só guarda na memória se a linha tiver um "nome" preenchido
+  }).filter(p => p.nome); /* Só guarda na memória se a linha tiver um "nome" preenchido
 }
