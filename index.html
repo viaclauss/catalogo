@@ -157,18 +157,65 @@
     footer { background: var(--texto); padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .footer-mono { font-size: 32px; font-weight: 700; color: var(--ouro); letter-spacing: -2px; }
     .footer-links { display: flex; gap: 24px; }
-    .footer-links a { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #c4a882; cursor: pointer; }
-    .footer-links a:hover { color: var(--ouro); }
+    .nav-mobile-btn { display: none; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px; padding: 4px; }
+    .nav-mobile-menu { display: none; position: fixed; top: 48px; left: 0; right: 0; background: #fff; border-bottom: 1px solid var(--borda); z-index: 99; padding: 0.5rem 0; }
+    .nav-mobile-menu button { display: block; width: 100%; text-align: left; padding: 12px 1.5rem; font-family: -apple-system, sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: pointer; }
+    .nav-mobile-menu button:hover, .nav-mobile-menu button.ativo { color: var(--ouro); background: var(--rose); }
+    @media (max-width: 768px) { .nav-mobile-btn { display: block; } }
 
-    @media (max-width: 600px) {
-      .grade { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      #painel-carrinho { max-width: 100%; }
-      .detalhe-corpo { grid-template-columns: 1fr; }
-      .detalhe-esq { max-height: 220px; }
-      .detalhe-rel { display: none; }
-      .hero-banner { grid-template-columns: 1fr 1.5fr 1fr; }
+    @media (max-width: 768px) {
+      /* Nav */
+      nav { padding: 0 1rem; height: 48px; }
       .nav-links { display: none; }
-      footer { flex-direction: column; text-align: center; }
+      #btn-carrinho { padding: 6px 14px; font-size: 12px; }
+
+      /* Hero */
+      .hero { padding: 1.5rem 1rem 1.25rem; }
+      .hero-mono { font-size: 38px; }
+      .hero-banner { grid-template-columns: 0 1fr 0; gap: 0; max-width: 100%; }
+      .hero-cell:first-child, .hero-cell:last-child { display: none; }
+      .carrossel { border-radius: var(--raio); }
+
+      /* Main */
+      main { padding: 1.25rem 0.75rem 4rem; }
+      #busca { font-size: 16px; }
+      .filtros { gap: 6px; }
+      .chip { font-size: 10px; padding: 5px 12px; }
+
+      /* Grade */
+      .grade { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .card-body { padding: 8px; }
+      .card-nome { font-size: 12px; }
+      .card-preco { font-size: 13px; }
+      .btn-add { font-size: 9px; padding: 7px; }
+
+      /* Carrinho */
+      #painel-carrinho { max-width: 100%; }
+
+      /* Painel detalhes */
+      #painel-detalhe { padding: 0; align-items: flex-end; }
+      .detalhe-box { max-width: 100%; max-height: 95vh; border-radius: var(--raio) var(--raio) 0 0; }
+      .detalhe-corpo { grid-template-columns: 1fr; overflow-y: auto; }
+      .detalhe-esq { max-height: 55vw; min-height: 200px; }
+      .detalhe-info { padding: 1.25rem; }
+      .detalhe-nome { font-size: 18px; }
+      .detalhe-preco { font-size: 22px; margin-bottom: 12px; }
+      .detalhe-desc { font-size: 13px; margin-bottom: 12px; }
+      .detalhe-rel { display: none; }
+      .btn-add-detalhe, .btn-ver-carrinho { padding: 13px; font-size: 12px; }
+
+      /* Secao */
+      .secao-titulo { font-size: 10px; }
+
+      /* Footer */
+      footer { flex-direction: column; text-align: center; padding: 1.25rem 1rem; gap: 0.75rem; }
+      .footer-links { gap: 16px; flex-wrap: wrap; justify-content: center; }
+    }
+
+    @media (max-width: 380px) {
+      .grade { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .card-nome { font-size: 11px; }
+      .hero-mono { font-size: 32px; }
     }
   </style>
 </head>
@@ -190,8 +237,15 @@
     <button onclick="filtrarNav('semijoias')" id="nav-semijoias">Semijoias</button>
     <button onclick="filtrarNav('novidades')" id="nav-novidades">Novidades</button>
   </div>
+  <button class="nav-mobile-btn" id="nav-mobile-btn" onclick="toggleMenuMobile()">☰</button>
   <button id="btn-carrinho">🛍 Carrinho <span id="badge-qtd"></span></button>
 </nav>
+<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <button onclick="filtrarNav('');fecharMenuMobile()" class="ativo" id="mnav-todos">Home</button>
+  <button onclick="filtrarNav('roupas');fecharMenuMobile()" id="mnav-roupas">Roupas</button>
+  <button onclick="filtrarNav('semijoias');fecharMenuMobile()" id="mnav-semijoias">Semijoias</button>
+  <button onclick="filtrarNav('novidades');fecharMenuMobile()" id="mnav-novidades">Novidades</button>
+</div>
 
 <div class="hero">
   <div class="hero-mono">VC</div>
@@ -696,6 +750,19 @@
     if (!url) return "";
     if (url.includes("lh3.googleusercontent.com")) return url.replace(/=s\d+$/, "") + "=s" + tamanho;
     return url;
+  }
+
+  /* ── Menu mobile ───────────────────────────────────────── */
+  function toggleMenuMobile() {
+    const menu = document.getElementById("nav-mobile-menu");
+    const btn = document.getElementById("nav-mobile-btn");
+    const aberto = menu.style.display === "block";
+    menu.style.display = aberto ? "none" : "block";
+    btn.textContent = aberto ? "☰" : "✕";
+  }
+  function fecharMenuMobile() {
+    document.getElementById("nav-mobile-menu").style.display = "none";
+    document.getElementById("nav-mobile-btn").textContent = "☰";
   }
 
   carregarProdutos();
