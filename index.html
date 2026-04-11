@@ -201,8 +201,18 @@
       .detalhe-nome { font-size: 18px; }
       .detalhe-preco { font-size: 22px; margin-bottom: 12px; }
       .detalhe-desc { font-size: 13px; margin-bottom: 12px; }
-      .detalhe-rel { display: none; }
+      .detalhe-rel { display: block; padding: 1rem 1.25rem; }
       .btn-add-detalhe, .btn-ver-carrinho { padding: 13px; font-size: 12px; }
+
+      /* Painel detalhes — tela cheia no mobile */
+      #painel-detalhe { padding: 0; align-items: stretch; justify-content: stretch; }
+      .detalhe-box { max-width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
+      .detalhe-header { flex-shrink: 0; }
+      .detalhe-corpo { grid-template-columns: 1fr; flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+      .detalhe-esq { max-height: 60vw; min-height: 180px; flex-shrink: 0; cursor: default; }
+      .detalhe-esq img { touch-action: pinch-zoom; }
+      .detalhe-dir { overflow: visible; }
+      .detalhe-info { border-bottom: none; overflow: visible; }
 
       /* Secao */
       .secao-titulo { font-size: 10px; }
@@ -620,6 +630,7 @@
     if (rel.length === 0) { rg.innerHTML = `<p style="font-size:12px;color:var(--muted);font-family:sans-serif">Nenhum outro produto nesta categoria.</p>`; }
     else { rel.forEach(r => { const d = document.createElement("div"); d.className = "rel-card"; d.innerHTML = `<div class="rel-img">${r.imagem ? `<img src="${imgUrl(r.imagem, 300)}" alt="${r.nome}" loading="lazy" />` : "🧥"}</div><p class="rel-nome">${r.nome}</p><p class="rel-preco">R$ ${r.preco.toFixed(2).replace(".", ",")}</p>`; d.addEventListener("click", () => abrirDetalhe(r)); rg.appendChild(d); }); }
     document.getElementById("painel-detalhe").classList.add("visivel");
+    document.body.style.overflow = "hidden";
   }
 
   function selecionarCor(prod, cor) {
@@ -658,16 +669,21 @@
     document.getElementById("detalhe-estoque").textContent = sem ? "Sem estoque" : `${v.qtd} disponíveis`;
   }
 
-  function fecharDetalhe() { document.getElementById("painel-detalhe").classList.remove("visivel"); }
+  function fecharDetalhe() {
+    document.getElementById("painel-detalhe").classList.remove("visivel");
+    document.body.style.overflow = "";
+  }
   document.getElementById("btn-ver-carrinho").addEventListener("click", () => { fecharDetalhe(); abrirCarrinho(); });
   document.getElementById("btn-fechar-detalhe").addEventListener("click", fecharDetalhe);
   document.getElementById("painel-detalhe").addEventListener("click", function(e) { if (e.target === this) fecharDetalhe(); });
 
-  /* ── Zoom na imagem ── */
-  document.getElementById("detalhe-img-wrap").addEventListener("click", function() {
+  /* ── Zoom na imagem (só desktop) ── */
+  const imgWrap = document.getElementById("detalhe-img-wrap");
+  imgWrap.addEventListener("click", function() {
+    if (window.innerWidth <= 768) return;
     this.classList.toggle("zoom");
   });
-  document.getElementById("detalhe-img-wrap").addEventListener("mousemove", function(e) {
+  imgWrap.addEventListener("mousemove", function(e) {
     if (!this.classList.contains("zoom")) return;
     const rect = this.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -675,7 +691,7 @@
     const img = this.querySelector("img");
     if (img) img.style.transformOrigin = `${x}% ${y}%`;
   });
-  document.getElementById("detalhe-img-wrap").addEventListener("mouseleave", function() {
+  imgWrap.addEventListener("mouseleave", function() {
     this.classList.remove("zoom");
     const img = this.querySelector("img");
     if (img) img.style.transformOrigin = "center center";
