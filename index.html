@@ -30,6 +30,14 @@
     .hero-cell { background: var(--rose-mid); border-radius: var(--raio); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; overflow: hidden; }
     .hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(184,150,90,0.9); padding: 14px 10px; text-align: center; }
     .hero-overlay p { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #fff; line-height: 1.6; }
+    .carrossel { border-radius: var(--raio); aspect-ratio: 3/4; overflow: hidden; position: relative; background: var(--rose-deep); }
+    .carrossel-slides { display: flex; height: 100%; transition: transform 0.6s ease; will-change: transform; }
+    .carrossel-slide { min-width: 100%; height: 100%; flex-shrink: 0; }
+    .carrossel-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .carrossel-slide-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+    .carrossel-dots { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+    .carrossel-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: background 0.2s; border: none; padding: 0; }
+    .carrossel-dot.ativo { background: #fff; }
 
     main { max-width: 1060px; margin: 0 auto; padding: 2rem 1rem 5rem; }
     #busca { width: 100%; padding: 10px 16px; border: 1px solid var(--borda); border-radius: var(--raio); font-family: Georgia, serif; font-size: 13px; color: var(--texto); background: #fff; outline: none; margin-bottom: 1rem; }
@@ -171,6 +179,7 @@
     nomeLoja: "Via Clauss",
     whatsapp: "5543998155361",
     sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_LdiAMOmESy6itG4E8O1zd4oPuQlBHZNoKBqj-kAv1aqXw8yEMwxG1igBry04IRF63kIwBKHpvH2/pub?output=csv",
+    apiUrl: "https://script.google.com/macros/s/AKfycbzBxZS2Fu3J-9kdXGj2-yLZAP0Qv_aBBhP13qV7J9Drg3elVwrmXrszTcKcXHHdneEy/exec",
   };
 </script>
 
@@ -189,9 +198,11 @@
   <div class="hero-nome">Via Clauss</div>
   <div class="hero-banner">
     <div class="hero-cell">👗</div>
-    <div class="hero-cell" style="background:var(--rose-deep)">
-      💎
-      <div class="hero-overlay"><p>Nova coleção<br>de semijoias</p></div>
+    <div class="carrossel" id="hero-carrossel">
+      <div class="carrossel-slides" id="carrossel-slides">
+        <div class="carrossel-slide"><div class="carrossel-slide-ph">💎</div></div>
+      </div>
+      <div class="carrossel-dots" id="carrossel-dots"></div>
     </div>
     <div class="hero-cell">✨</div>
   </div>
@@ -615,6 +626,70 @@
     const img = this.querySelector("img");
     if (img) img.style.transformOrigin = "center center";
   });
+
+  /* ── Carrossel banner ──────────────────────────────────── */
+  let carrosselIdx = 0;
+  let carrosselTimer = null;
+
+  async function carregarCarrossel() {
+    try {
+      const res = await fetch(CONFIG.sheetCsvUrl.replace("pub?output=csv", "pub?output=csv&gid=") + "&gid=0");
+      const bannerRes = await fetch(CONFIG.sheetCsvUrl.replace(/\/pub\?.*/, "/pub?gid=") + CONFIG.bannerGid + "&output=csv");
+      if (!bannerRes.ok) return;
+      const text = await bannerRes.text();
+      const urls = text.trim().split("\n").slice(1).map(l => l.trim().replace(/^"|"$/g, "")).filter(Boolean);
+      if (urls.length === 0) return;
+      const slides = document.getElementById("carrossel-slides");
+      const dots = document.getElementById("carrossel-dots");
+      slides.innerHTML = "";
+      dots.innerHTML = "";
+      urls.forEach((url, i) => {
+        const slide = document.createElement("div"); slide.className = "carrossel-slide";
+        slide.innerHTML = `<img src="${url}" alt="Banner ${i+1}" loading="lazy" />`;
+        slides.appendChild(slide);
+        const dot = document.createElement("button"); dot.className = "carrossel-dot" + (i === 0 ? " ativo" : "");
+        dot.addEventListener("click", () => irParaSlide(i));
+        dots.appendChild(dot);
+      });
+      iniciarCarrossel(urls.length);
+    } catch(e) { console.log("Banner não carregado:", e.message); }
+  }
+
+  async function carregarCarrosselViaApi() {
+    try {
+      const res = await fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarBanner", senha: "" }) });
+      const data = await res.json();
+      if (!data.ok || !data.urls || data.urls.length === 0) return;
+      const slides = document.getElementById("carrossel-slides");
+      const dots = document.getElementById("carrossel-dots");
+      slides.innerHTML = ""; dots.innerHTML = "";
+      data.urls.forEach((url, i) => {
+        const slide = document.createElement("div"); slide.className = "carrossel-slide";
+        slide.innerHTML = `<img src="${url}" alt="Banner ${i+1}" loading="lazy" />`;
+        slides.appendChild(slide);
+        const dot = document.createElement("button"); dot.className = "carrossel-dot" + (i === 0 ? " ativo" : "");
+        dot.addEventListener("click", () => irParaSlide(i));
+        dots.appendChild(dot);
+      });
+      iniciarCarrossel(data.urls.length);
+    } catch(e) { console.log("Carrossel:", e.message); }
+  }
+
+  function iniciarCarrossel(total) {
+    if (total <= 1) return;
+    carrosselIdx = 0;
+    if (carrosselTimer) clearInterval(carrosselTimer);
+    carrosselTimer = setInterval(() => irParaSlide((carrosselIdx + 1) % total), 4000);
+  }
+
+  function irParaSlide(idx) {
+    carrosselIdx = idx;
+    const slides = document.getElementById("carrossel-slides");
+    slides.style.transform = `translateX(-${idx * 100}%)`;
+    document.querySelectorAll(".carrossel-dot").forEach((d, i) => d.classList.toggle("ativo", i === idx));
+  }
+
+  carregarCarrosselViaApi();
 
   carregarProdutos();
 </script>

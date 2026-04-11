@@ -152,9 +152,28 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Campos comuns ── */
-    .campo-senha { position: relative; }
-    .campo-senha input { padding-right: 40px; }
-    .olho { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; color: var(--muted); }
+    /* ── Abas ── */
+    .abas { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--borda); }
+    .aba-btn { background: none; border: none; padding: 10px 20px; font-size: 13px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.12s; }
+    .aba-btn:hover { color: var(--pri); }
+    .aba-btn.ativa { color: var(--pri); border-bottom-color: var(--pri); font-weight: 500; }
+    .aba-conteudo { display: none; }
+    .aba-conteudo.ativa { display: block; }
+
+    /* ── Banner ── */
+    .banner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+    .banner-card { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); overflow: hidden; position: relative; }
+    .banner-card img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
+    .banner-card-vazio { width: 100%; aspect-ratio: 3/4; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+    .banner-card-actions { padding: 8px; display: flex; gap: 6px; }
+    .btn-banner-remover { flex: 1; padding: 5px; border: 1px solid var(--borda); background: none; border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--muted); }
+    .btn-banner-remover:hover { border-color: var(--danger); color: var(--danger); }
+    .banner-add-area { border: 2px dashed var(--borda); border-radius: var(--raio); padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.15s; }
+    .banner-add-area:hover { border-color: var(--pri); }
+    .banner-add-area input { display: none; }
+    .banner-salvar { background: var(--pri); color: #fff; border: none; border-radius: 99px; padding: 10px 24px; font-size: 14px; cursor: pointer; }
+    .banner-salvar:hover { background: var(--pri-dark); }
+    .banner-salvar:disabled { background: #ccc; cursor: default; }
   </style>
 </head>
 <body>
@@ -190,24 +209,40 @@
     <button class="btn" onclick="sair()">Sair</button>
   </header>
   <main>
-    <button id="btn-novo" onclick="abrirModal()">+ Novo produto</button>
-    <div class="tabela-wrap">
-      <table id="tabela">
-        <thead>
-          <tr>
-            <th>Foto</th>
-            <th>Nome</th>
-            <th>Categoria</th>
-            <th>Preço</th>
-            <th>Descrição</th>
-            <th>Badge</th>
-            <th>Estoque</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div id="loading" class="spinner"></div>
+    <div class="abas">
+      <button class="aba-btn ativa" onclick="trocarAba('produtos', this)">Produtos</button>
+      <button class="aba-btn" onclick="trocarAba('banner', this)">Banner do site</button>
+    </div>
+
+    <div id="aba-produtos" class="aba-conteudo ativa">
+      <button id="btn-novo" onclick="abrirModal()">+ Novo produto</button>
+      <div class="tabela-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>Foto</th><th>Nome</th><th>Categoria</th><th>Preço</th>
+              <th>Descrição</th><th>Badge</th><th>Estoque / Variantes</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="loading" class="spinner"></div>
+      </div>
+    </div>
+
+    <div id="aba-banner" class="aba-conteudo">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem">Fotos que aparecem no carrossel do topo do site. Faça upload direto ou cole um link do Google Drive.</p>
+      <div class="banner-grid" id="banner-grid"></div>
+      <div class="banner-add-area" onclick="document.getElementById('input-banner').click()">
+        <input type="file" id="input-banner" accept="image/*" multiple onchange="adicionarFotosBanner(this)" />
+        <div style="font-size:28px;margin-bottom:8px">📷</div>
+        <p style="font-size:13px;color:var(--muted)">Clique para adicionar fotos</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px">Selecione várias de uma vez</p>
+      </div>
+      <div style="margin-top:1.25rem;display:flex;align-items:center;gap:12px">
+        <button class="banner-salvar" id="btn-salvar-banner" onclick="salvarBanner()">Salvar banner</button>
+        <span id="banner-status" style="font-size:13px;color:var(--muted)"></span>
+      </div>
     </div>
   </main>
 </div>
@@ -634,6 +669,79 @@
     el.textContent = msg;
     el.classList.add("vis");
     setTimeout(() => el.classList.remove("vis"), 2800);
+  }
+
+  /* ── Abas ───────────────────────────────────────────── */
+  function trocarAba(aba, btn) {
+    document.querySelectorAll(".aba-btn").forEach(b => b.classList.remove("ativa"));
+    document.querySelectorAll(".aba-conteudo").forEach(c => c.classList.remove("ativa"));
+    btn.classList.add("ativa");
+    document.getElementById("aba-" + aba).classList.add("ativa");
+    if (aba === "banner") carregarBanner();
+  }
+
+  /* ── Banner ─────────────────────────────────────────── */
+  let bannerUrls = [];
+
+  async function carregarBanner() {
+    document.getElementById("banner-status").textContent = "Carregando…";
+    const res = await api({ acao: "listarBanner", senha });
+    document.getElementById("banner-status").textContent = "";
+    if (res.ok) { bannerUrls = res.urls || []; renderBanner(); }
+    else toast("Erro ao carregar banner: " + res.erro);
+  }
+
+  function renderBanner() {
+    const grid = document.getElementById("banner-grid");
+    grid.innerHTML = "";
+    bannerUrls.forEach((url, idx) => {
+      const card = document.createElement("div"); card.className = "banner-card";
+      card.innerHTML = `
+        <img src="${url}" onerror="this.style.display='none'" />
+        <div class="banner-card-actions">
+          <button class="btn-banner-remover" data-idx="${idx}">Remover</button>
+        </div>`;
+      card.querySelector(".btn-banner-remover").addEventListener("click", () => {
+        bannerUrls.splice(idx, 1); renderBanner();
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  async function adicionarFotosBanner(input) {
+    const files = [...input.files];
+    if (!files.length) return;
+    const btn = document.getElementById("btn-salvar-banner");
+    btn.disabled = true;
+    document.getElementById("banner-status").textContent = `Enviando 0 de ${files.length}…`;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      document.getElementById("banner-status").textContent = `Enviando ${i + 1} de ${files.length}…`;
+      try {
+        const base64 = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result.split(",")[1]);
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+        const resp = await api({ acao: "upload", senha, nome: file.name, base64, tipo: file.type });
+        if (resp.ok) bannerUrls.push(resp.url);
+        else toast("Erro no upload: " + resp.erro);
+      } catch(e) { toast("Erro: " + e.message); }
+    }
+    renderBanner();
+    btn.disabled = false;
+    document.getElementById("banner-status").textContent = `${files.length} foto(s) adicionada(s) — clique em Salvar banner`;
+    input.value = "";
+  }
+
+  async function salvarBanner() {
+    const btn = document.getElementById("btn-salvar-banner");
+    btn.disabled = true; btn.textContent = "Salvando…";
+    const res = await api({ acao: "salvarBanner", senha, urls: bannerUrls });
+    btn.disabled = false; btn.textContent = "Salvar banner";
+    if (res.ok) { toast("Banner salvo!"); document.getElementById("banner-status").textContent = ""; }
+    else toast("Erro ao salvar: " + res.erro);
   }
 </script>
 </body>
