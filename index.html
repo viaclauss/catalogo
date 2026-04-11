@@ -15,38 +15,9 @@
     body { font-family: Georgia, serif; background: var(--fundo); color: var(--texto); min-height: 100vh; }
 
     nav { background: #fff; border-bottom: 1px solid var(--borda); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links { display: flex; gap: 24px; }
     .nav-links button { font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: pointer; transition: color 0.12s; }
     .nav-links button:hover, .nav-links button.ativo { color: var(--ouro); }
-
-    /* ── Dropdown de categorias na nav desktop ── */
-    .nav-cat-wrap { position: relative; display: flex; align-items: center; }
-    .nav-cat-wrap > button { display: flex; align-items: center; gap: 4px; }
-    .nav-cat-wrap > button::after { content: "▾"; font-size: 9px; opacity: 0.5; transition: transform 0.15s; }
-    .nav-cat-wrap.open > button::after { transform: rotate(-180deg); }
-    .nav-cat-wrap > button.ativo { color: var(--ouro); }
-    .nav-dropdown {
-      display: none; position: absolute; top: calc(100% + 8px); left: 50%;
-      transform: translateX(-50%);
-      background: #fff; border: 1px solid var(--borda);
-      border-radius: 8px; min-width: 160px; z-index: 500;
-      padding: 6px 0;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-    }
-    .nav-cat-wrap.open .nav-dropdown { display: block; }
-    .nav-dropdown button {
-      display: block; width: 100%; text-align: left;
-      padding: 10px 18px;
-      font-family: -apple-system, sans-serif; font-size: 11px;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--muted); background: none; border: none; cursor: pointer;
-      transition: all 0.1s;
-    }
-    .nav-dropdown button:hover { color: var(--ouro); background: var(--rose); }
-    .nav-dropdown button.ativo { color: var(--ouro); font-weight: 600; }
-
-    /* ── Mobile: subcategorias no menu hambúrguer ── */
-    .nav-mobile-menu .mnav-subitem { padding-left: 2.5rem !important; font-size: 11px !important; color: var(--ouro-dark) !important; border-left: 2px solid var(--borda); margin-left: 1.5rem; }
     #btn-carrinho { background: none; border: 1px solid var(--borda); border-radius: 99px; padding: 8px 20px; font-family: -apple-system, sans-serif; font-size: 13px; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.12s; }
     #btn-carrinho:hover { border-color: var(--ouro); color: var(--ouro); }
     #btn-carrinho svg { width: 20px; height: 20px; }
@@ -274,7 +245,7 @@
 </script>
 
 <nav>
-  <div class="nav-links" id="nav-links">
+  <div class="nav-links">
     <button onclick="filtrarNav('')" class="ativo" id="nav-todos">Home</button>
     <button onclick="filtrarNav('novidades')" id="nav-novidades">Novidades</button>
   </div>
@@ -384,22 +355,19 @@
 
   async function carregarProdutos() {
     try {
-      const resProd = await fetch(CONFIG.sheetCsvUrl);
+      const [resProd, resCats] = await Promise.all([
+        fetch(CONFIG.sheetCsvUrl),
+        fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarCategorias", senha: "" }) })
+      ]);
       if (!resProd.ok) throw new Error("Não foi possível carregar a planilha.");
       produtos = parseCsv(await resProd.text());
+      const dataCats = await resCats.json();
+      categorias = dataCats.ok ? dataCats.categorias : [];
+      popularFiltros();
+      renderizar();
     } catch (e) {
       document.getElementById("conteudo").innerHTML = `<div id="estado"><p>⚠️ Erro ao carregar produtos.<br><small>${e.message}</small></p></div>`;
-      return;
     }
-    try {
-      const resCats = await fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarCategorias", senha: "" }) });
-      const dataCats = await resCats.json();
-      categorias = dataCats.ok ? (dataCats.categorias || []) : [];
-    } catch (e) {
-      categorias = [];
-    }
-    popularFiltros();
-    renderizar();
   }
 
   function parseCsv(text) {
@@ -452,7 +420,6 @@
   }
 
   function popularFiltros() {
-    // ── Chips abaixo da busca ──
     const div = document.getElementById("filtros");
     div.innerHTML = "";
 
@@ -467,86 +434,30 @@
     div.appendChild(btnNov);
 
     const raizes = categoriasRaiz();
-    const listaCats = raizes.length > 0 ? raizes.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
-
-    listaCats.forEach(cat => {
-      const btn = document.createElement("button");
-      btn.className = "chip"; btn.dataset.cat = cat;
-      btn.textContent = cat;
-      btn.addEventListener("click", () => filtrar(cat, btn));
-      div.appendChild(btn);
-    });
-
-    // ── Desktop nav: adicionar categorias com dropdown ──
-    const navLinks = document.getElementById("nav-links");
-    navLinks.querySelectorAll(".nav-cat-wrap, .nav-cat-simple").forEach(el => el.remove());
-
-    listaCats.forEach(cat => {
-      const filhos = filhosDe(cat);
-      if (filhos.length > 0) {
-        // Categoria com subcategorias → dropdown
-        const wrap = document.createElement("div");
-        wrap.className = "nav-cat-wrap";
-        wrap.dataset.navCat = cat;
-
+    if (raizes.length > 0) {
+      raizes.forEach(c => {
         const btn = document.createElement("button");
-        btn.textContent = cat;
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const jáAberto = wrap.classList.contains("open");
-          // Fechar todos os outros dropdowns
-          document.querySelectorAll(".nav-cat-wrap.open").forEach(w => w.classList.remove("open"));
-          if (!jáAberto) {
-            wrap.classList.add("open");
-            // Selecionar a categoria pai nos chips
-            filtrar(cat, document.querySelector(`.chip[data-cat="${cat}"]`) || btn);
-          }
-        });
-
-        const menu = document.createElement("div");
-        menu.className = "nav-dropdown";
-
-        filhos.forEach(f => {
-          const fb = document.createElement("button");
-          fb.textContent = f;
-          fb.dataset.sub = f;
-          fb.addEventListener("click", (e) => {
-            e.stopPropagation();
-            wrap.classList.remove("open");
-            // Atualiza estado
-            categoriaAtiva = cat; subCategoriaAtiva = f;
-            document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
-            const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
-            if (chip) chip.classList.add("ativo");
-            mostrarSubcategorias(cat);
-            setTimeout(() => {
-              const sub = document.querySelector(`.chip-sub[data-sub="${f}"]`);
-              if (sub) { document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo")); sub.classList.add("ativo"); }
-            }, 50);
-            renderizar();
-          });
-          menu.appendChild(fb);
-        });
-
-        wrap.appendChild(btn);
-        wrap.appendChild(menu);
-        navLinks.appendChild(wrap);
-      } else {
-        // Categoria simples → botão direto
+        btn.className = "chip"; btn.dataset.cat = c.categoria;
+        btn.textContent = c.categoria;
+        btn.addEventListener("click", () => filtrar(c.categoria, btn));
+        div.appendChild(btn);
+      });
+    } else {
+      const cats = [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
+      cats.forEach(cat => {
         const btn = document.createElement("button");
-        btn.className = "nav-cat-simple";
-        btn.dataset.navCat = cat;
-        btn.textContent = cat;
-        btn.addEventListener("click", () => filtrarNav(cat));
-        navLinks.appendChild(btn);
-      }
-    });
+        btn.className = "chip"; btn.dataset.cat = cat; btn.textContent = cat;
+        btn.addEventListener("click", () => filtrar(cat, btn));
+        div.appendChild(btn);
+      });
+    }
 
-    // ── Menu mobile ──
     const mnav = document.getElementById("mnav-cats");
     if (mnav) {
       mnav.innerHTML = "";
-      listaCats.forEach(cat => {
+      const raizes = categoriasRaiz();
+      const lista = raizes.length > 0 ? raizes.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
+      lista.forEach(cat => {
         const btn = document.createElement("button");
         btn.textContent = cat;
         btn.addEventListener("click", () => { filtrarNav(cat); fecharMenuMobile(); });
@@ -554,7 +465,7 @@
         filhosDe(cat).forEach(f => {
           const btnF = document.createElement("button");
           btnF.textContent = "↳ " + f;
-          btnF.className = "mnav-subitem";
+          btnF.style.cssText = "padding-left:2.5rem;color:var(--ouro-dark);font-size:11px";
           btnF.addEventListener("click", () => {
             categoriaAtiva = cat; subCategoriaAtiva = f;
             document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
@@ -612,13 +523,8 @@
     categoriaAtiva = cat; subCategoriaAtiva = "";
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
     const ids = { "": "nav-todos", "novidades": "nav-novidades" };
-    const nb = document.getElementById(ids[cat] || "");
+    const nb = document.getElementById(ids[cat] || "nav-todos");
     if (nb) nb.classList.add("ativo");
-    // Destacar na nav de categorias
-    document.querySelectorAll(".nav-cat-wrap, .nav-cat-simple").forEach(el => {
-      const btn = el.tagName === "BUTTON" ? el : el.querySelector("button");
-      if (btn) btn.classList.toggle("ativo", el.dataset.navCat === cat);
-    });
     document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
     const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
     if (chip) chip.classList.add("ativo");
@@ -627,21 +533,11 @@
     renderizar();
   }
 
-  // Fechar dropdowns ao clicar fora
-  document.addEventListener("click", () => {
-    document.querySelectorAll(".nav-cat-wrap.open").forEach(w => w.classList.remove("open"));
-  });
-
   function sincNav(cat) {
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
     const ids = { "": "nav-todos", "novidades": "nav-novidades" };
-    const nb = document.getElementById(ids[cat] || "");
+    const nb = document.getElementById(ids[cat] || "nav-todos");
     if (nb) nb.classList.add("ativo");
-    // Destacar botão de categoria na nav
-    document.querySelectorAll(".nav-cat-wrap[data-nav-cat], .nav-cat-simple[data-nav-cat]").forEach(el => {
-      const btn = el.tagName === "BUTTON" ? el : el.querySelector("button");
-      if (btn) btn.classList.toggle("ativo", el.dataset.navCat === cat);
-    });
   }
 
   document.getElementById("busca").addEventListener("input", () => { subCategoriaAtiva = ""; renderizar(); });
