@@ -42,11 +42,36 @@
     main { max-width: 1060px; margin: 0 auto; padding: 2rem 1rem 5rem; }
     #busca { width: 100%; padding: 10px 16px; border: 1px solid var(--borda); border-radius: var(--raio); font-family: Georgia, serif; font-size: 13px; color: var(--texto); background: #fff; outline: none; margin-bottom: 1rem; }
     #busca:focus { border-color: var(--ouro); }
-    .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.5rem; }
-    .subfiltros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; min-height: 0; }
-    .chip-sub { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 14px; border-radius: 99px; border: 1px solid var(--borda); background: var(--rose); color: var(--muted); cursor: pointer; transition: all 0.12s; }
+    .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0; }
+
+    /* Gaveta desktop */
+    .subfiltros-wrap { overflow: hidden; max-height: 0; transition: max-height 0.3s ease, margin 0.3s ease; margin-bottom: 0; }
+    .subfiltros-wrap.aberta { max-height: 200px; margin-bottom: 1.5rem; margin-top: 10px; }
+    .subfiltros { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 16px; background: var(--rose); border-radius: var(--raio); border: 1px solid var(--rose-mid); }
+    .chip-sub { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 99px; border: 1px solid var(--rose-mid); background: #fff; color: var(--muted); cursor: pointer; transition: all 0.12s; }
     .chip-sub:hover { border-color: var(--ouro); color: var(--ouro); }
     .chip-sub.ativo { background: var(--ouro-dark); color: #fff; border-color: var(--ouro-dark); }
+    .chip.tem-filhos::after { content: " ▾"; font-size: 9px; opacity: 0.7; }
+    .chip.tem-filhos.ativo::after { content: " ▴"; }
+
+    /* Bottom sheet mobile */
+    #sheet-cats { display: none; position: fixed; inset: 0; z-index: 350; }
+    #sheet-cats.vis { display: block; }
+    #sheet-overlay { position: absolute; inset: 0; background: rgba(58,42,30,0.4); }
+    #sheet-box {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: #fff; border-radius: 16px 16px 0 0;
+      padding: 0 0 2rem; max-height: 70vh; overflow-y: auto;
+      transform: translateY(100%); transition: transform 0.3s ease;
+    }
+    #sheet-cats.vis #sheet-box { transform: translateY(0); }
+    .sheet-handle { width: 40px; height: 4px; background: var(--borda); border-radius: 2px; margin: 12px auto 16px; }
+    .sheet-titulo { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ouro); padding: 0 1.25rem; margin-bottom: 12px; }
+    .sheet-opcoes { display: flex; flex-direction: column; }
+    .sheet-opcao { padding: 14px 1.25rem; font-family: -apple-system, sans-serif; font-size: 14px; color: var(--texto); background: none; border: none; text-align: left; cursor: pointer; border-bottom: 1px solid var(--borda); }
+    .sheet-opcao:last-child { border-bottom: none; }
+    .sheet-opcao:hover, .sheet-opcao.ativo { color: var(--ouro); background: var(--rose); }
+    .sheet-opcao.todos { font-weight: 500; }
     .chip { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 16px; border-radius: 99px; border: 1px solid var(--borda); background: #fff; color: var(--muted); cursor: pointer; transition: all 0.12s; }
     .chip:hover { border-color: var(--ouro); color: var(--ouro); }
     .chip.ativo { background: var(--ouro); color: #fff; border-color: var(--ouro); }
@@ -279,7 +304,9 @@
     <button class="chip ativo" data-cat="">Todos</button>
     <button class="chip" data-cat="novidades">Novidades</button>
   </div>
-  <div class="subfiltros" id="subfiltros"></div>
+  <div class="subfiltros-wrap" id="subfiltros-wrap">
+    <div class="subfiltros" id="subfiltros"></div>
+  </div>
   <div id="conteudo">
     <div id="estado"><div class="spinner"></div>Carregando produtos…</div>
   </div>
@@ -292,6 +319,16 @@
     <a>Contato</a>
   </div>
 </footer>
+
+<!-- Bottom sheet categorias (mobile) -->
+<div id="sheet-cats">
+  <div id="sheet-overlay"></div>
+  <div id="sheet-box">
+    <div class="sheet-handle"></div>
+    <p class="sheet-titulo" id="sheet-titulo"></p>
+    <div class="sheet-opcoes" id="sheet-opcoes"></div>
+  </div>
+</div>
 
 <div id="overlay"></div>
 
@@ -439,6 +476,7 @@
         const btn = document.createElement("button");
         btn.className = "chip"; btn.dataset.cat = c.categoria;
         btn.textContent = c.categoria;
+        if (filhosDe(c.categoria).length > 0) btn.classList.add("tem-filhos");
         btn.addEventListener("click", () => filtrar(c.categoria, btn));
         div.appendChild(btn);
       });
@@ -459,63 +497,97 @@
       const lista = raizes.length > 0 ? raizes.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
       lista.forEach(cat => {
         const btn = document.createElement("button");
-        btn.textContent = cat;
-        btn.addEventListener("click", () => { filtrarNav(cat); fecharMenuMobile(); });
-        mnav.appendChild(btn);
-        filhosDe(cat).forEach(f => {
-          const btnF = document.createElement("button");
-          btnF.textContent = "↳ " + f;
-          btnF.style.cssText = "padding-left:2.5rem;color:var(--ouro-dark);font-size:11px";
-          btnF.addEventListener("click", () => {
-            categoriaAtiva = cat; subCategoriaAtiva = f;
-            document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
-            const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
-            if (chip) chip.classList.add("ativo");
-            mostrarSubcategorias(cat);
-            setTimeout(() => {
-              const sub = document.querySelector(`.chip-sub[data-sub="${f}"]`);
-              if (sub) { document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo")); sub.classList.add("ativo"); }
-            }, 50);
-            renderizar(); fecharMenuMobile();
-          });
-          mnav.appendChild(btnF);
+        btn.textContent = cat + (filhosDe(cat).length > 0 ? " ▾" : "");
+        btn.addEventListener("click", () => {
+          filtrarNav(cat);
+          fecharMenuMobile();
+          if (filhosDe(cat).length > 0) setTimeout(() => abrirSheetMobile(cat), 200);
         });
+        mnav.appendChild(btn);
       });
     }
   }
 
   function mostrarSubcategorias(pai) {
-    const sub = document.getElementById("subfiltros");
     const filhos = filhosDe(pai);
-    if (filhos.length === 0) { sub.innerHTML = ""; return; }
+    const wrap = document.getElementById("subfiltros-wrap");
+    const sub = document.getElementById("subfiltros");
+
+    if (filhos.length === 0) { wrap.classList.remove("aberta"); sub.innerHTML = ""; return; }
+
     sub.innerHTML = "";
     const btnTodos = document.createElement("button");
-    btnTodos.className = "chip chip-sub ativo"; btnTodos.dataset.sub = "";
+    btnTodos.className = "chip-sub ativo"; btnTodos.dataset.sub = "";
     btnTodos.textContent = "Todos de " + pai;
     btnTodos.addEventListener("click", () => filtrarSub("", btnTodos));
     sub.appendChild(btnTodos);
     filhos.forEach(f => {
       const btn = document.createElement("button");
-      btn.className = "chip chip-sub"; btn.dataset.sub = f; btn.textContent = f;
+      btn.className = "chip-sub"; btn.dataset.sub = f; btn.textContent = f;
       btn.addEventListener("click", () => filtrarSub(f, btn));
       sub.appendChild(btn);
     });
+    wrap.classList.add("aberta");
   }
+
+  function fecharSubcategorias() {
+    document.getElementById("subfiltros-wrap").classList.remove("aberta");
+    document.getElementById("subfiltros").innerHTML = "";
+  }
+
+  function abrirSheetMobile(pai) {
+    const filhos = filhosDe(pai);
+    if (filhos.length === 0) return;
+    document.getElementById("sheet-titulo").textContent = pai;
+    const opcoes = document.getElementById("sheet-opcoes");
+    opcoes.innerHTML = "";
+    const btnTodos = document.createElement("button");
+    btnTodos.className = "sheet-opcao todos"; btnTodos.textContent = "Todos de " + pai;
+    btnTodos.addEventListener("click", () => { filtrarSub("", null); fecharSheet(); });
+    opcoes.appendChild(btnTodos);
+    filhos.forEach(f => {
+      const btn = document.createElement("button");
+      btn.className = "sheet-opcao"; btn.textContent = f;
+      btn.addEventListener("click", () => { filtrarSub(f, null); fecharSheet(); });
+      opcoes.appendChild(btn);
+    });
+    const sheet = document.getElementById("sheet-cats");
+    sheet.classList.add("vis");
+    document.body.style.overflow = "hidden";
+  }
+
+  function fecharSheet() {
+    document.getElementById("sheet-cats").classList.remove("vis");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("sheet-overlay").addEventListener("click", fecharSheet);
 
   function filtrar(cat, btn) {
     categoriaAtiva = cat; subCategoriaAtiva = "";
     document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
-    btn.classList.add("ativo");
+    if (btn) btn.classList.add("ativo");
     sincNav(cat);
-    if (cat && cat !== "novidades") mostrarSubcategorias(cat);
-    else document.getElementById("subfiltros").innerHTML = "";
+    if (cat && cat !== "novidades" && filhosDe(cat).length > 0) {
+      if (window.innerWidth <= 768) {
+        abrirSheetMobile(cat);
+      } else {
+        mostrarSubcategorias(cat);
+      }
+    } else {
+      fecharSubcategorias();
+    }
     renderizar();
   }
 
   function filtrarSub(sub, btn) {
     subCategoriaAtiva = sub;
     document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo"));
-    btn.classList.add("ativo");
+    if (btn) btn.classList.add("ativo");
+    else {
+      const chip = document.querySelector(`.chip-sub[data-sub="${sub}"]`);
+      if (chip) { document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo")); chip.classList.add("ativo"); }
+    }
     renderizar();
   }
 
@@ -528,8 +600,11 @@
     document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
     const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
     if (chip) chip.classList.add("ativo");
-    if (cat && cat !== "novidades") mostrarSubcategorias(cat);
-    else document.getElementById("subfiltros").innerHTML = "";
+    if (cat && cat !== "novidades" && filhosDe(cat).length > 0 && window.innerWidth > 768) {
+      mostrarSubcategorias(cat);
+    } else {
+      fecharSubcategorias();
+    }
     renderizar();
   }
 
