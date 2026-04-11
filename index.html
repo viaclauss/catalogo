@@ -56,7 +56,7 @@
     .card { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
     .card:hover { border-color: var(--ouro); transform: translateY(-2px); }
     .card-img { width: 100%; aspect-ratio: 2/3; background: var(--rose); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 48px; }
-    .card-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; filter: blur(0.4px); }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
     .card-body { padding: 12px; flex: 1; display: flex; flex-direction: column; }
     .card-badge { font-family: -apple-system, sans-serif; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; display: inline-block; padding: 2px 8px; border-radius: 2px; margin-bottom: 6px; }
     .badge-novo { background: var(--rose); color: var(--ouro); }
@@ -412,7 +412,7 @@
     const temVar = prod.variantesObj && prod.variantesObj.length > 0;
     const badgeHtml = prod.badge === "novo" ? `<span class="card-badge badge-novo">Novo</span>` : prod.badge === "promo" ? `<span class="card-badge badge-promo">Promo</span>` : "";
     card.innerHTML = `
-      ${prod.imagem ? `<div class="card-img"><img src="${prod.imagem}" alt="${prod.nome}" loading="lazy" /></div>` : `<div class="card-img">🧥</div>`}
+      ${prod.imagem ? `<div class="card-img"><img src="${imgUrl(prod.imagem, 400)}" alt="${prod.nome}" loading="lazy" /></div>` : `<div class="card-img">🧥</div>`}
       <div class="card-body">
         ${badgeHtml}
         <p class="card-nome">${prod.nome}</p>
@@ -463,7 +463,7 @@
     carrinho.forEach((item, idx) => {
       const div = document.createElement("div"); div.className = "item-carrinho";
       div.innerHTML = `
-        ${item.imagem ? `<div class="item-thumb"><img src="${item.imagem}" alt="${item.nome}" /></div>` : `<div class="item-thumb">🧥</div>`}
+        ${item.imagem ? `<div class="item-thumb"><img src="${imgUrl(item.imagem, 200)}" alt="${item.nome}" /></div>` : `<div class="item-thumb">🧥</div>`}
         <div class="item-info">
           <p class="item-nome">${item.nome}</p>
           ${item._variante ? `<p class="item-variante">${item._variante}</p>` : ""}
@@ -519,7 +519,7 @@
   function abrirDetalhe(prod) {
     varianteSelecionada = null;
     const w = document.getElementById("detalhe-img-wrap");
-    w.innerHTML = prod.imagem ? `<img src="${prod.imagem}" alt="${prod.nome}" />` : `<div class="detalhe-esq-ph">🧥</div>`;
+    w.innerHTML = prod.imagem ? `<img src="${imgUrl(prod.imagem, 1200)}" alt="${prod.nome}" />` : `<div class="detalhe-esq-ph">🧥</div>`;
     document.getElementById("detalhe-breadcrumb").textContent = prod.categoria || "";
     document.getElementById("detalhe-cat").textContent = prod.categoria || "";
     document.getElementById("detalhe-nome").textContent = prod.nome;
@@ -564,7 +564,7 @@
     const rg = document.getElementById("rel-grade"); rg.innerHTML = "";
     const rel = produtos.filter(p => p.categoria === prod.categoria && p.nome !== prod.nome);
     if (rel.length === 0) { rg.innerHTML = `<p style="font-size:12px;color:var(--muted);font-family:sans-serif">Nenhum outro produto nesta categoria.</p>`; }
-    else { rel.forEach(r => { const d = document.createElement("div"); d.className = "rel-card"; d.innerHTML = `<div class="rel-img">${r.imagem ? `<img src="${r.imagem}" alt="${r.nome}" loading="lazy" />` : "🧥"}</div><p class="rel-nome">${r.nome}</p><p class="rel-preco">R$ ${r.preco.toFixed(2).replace(".", ",")}</p>`; d.addEventListener("click", () => abrirDetalhe(r)); rg.appendChild(d); }); }
+    else { rel.forEach(r => { const d = document.createElement("div"); d.className = "rel-card"; d.innerHTML = `<div class="rel-img">${r.imagem ? `<img src="${imgUrl(r.imagem, 300)}" alt="${r.nome}" loading="lazy" />` : "🧥"}</div><p class="rel-nome">${r.nome}</p><p class="rel-preco">R$ ${r.preco.toFixed(2).replace(".", ",")}</p>`; d.addEventListener("click", () => abrirDetalhe(r)); rg.appendChild(d); }); }
     document.getElementById("painel-detalhe").classList.add("visivel");
   }
 
@@ -690,6 +690,13 @@
   }
 
   carregarCarrosselViaApi();
+
+  /* ── Tamanhos de imagem ────────────────────────────────── */
+  function imgUrl(url, tamanho) {
+    if (!url) return "";
+    if (url.includes("lh3.googleusercontent.com")) return url.replace(/=s\d+$/, "") + "=s" + tamanho;
+    return url;
+  }
 
   carregarProdutos();
 </script>
