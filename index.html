@@ -42,7 +42,11 @@
     main { max-width: 1060px; margin: 0 auto; padding: 2rem 1rem 5rem; }
     #busca { width: 100%; padding: 10px 16px; border: 1px solid var(--borda); border-radius: var(--raio); font-family: Georgia, serif; font-size: 13px; color: var(--texto); background: #fff; outline: none; margin-bottom: 1rem; }
     #busca:focus { border-color: var(--ouro); }
-    .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2rem; }
+    .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .subfiltros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; min-height: 0; }
+    .chip-sub { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 14px; border-radius: 99px; border: 1px solid var(--borda); background: var(--rose); color: var(--muted); cursor: pointer; transition: all 0.12s; }
+    .chip-sub:hover { border-color: var(--ouro); color: var(--ouro); }
+    .chip-sub.ativo { background: var(--ouro-dark); color: #fff; border-color: var(--ouro-dark); }
     .chip { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 16px; border-radius: 99px; border: 1px solid var(--borda); background: #fff; color: var(--muted); cursor: pointer; transition: all 0.12s; }
     .chip:hover { border-color: var(--ouro); color: var(--ouro); }
     .chip.ativo { background: var(--ouro); color: #fff; border-color: var(--ouro); }
@@ -243,18 +247,15 @@
 <nav>
   <div class="nav-links">
     <button onclick="filtrarNav('')" class="ativo" id="nav-todos">Home</button>
-    <button onclick="filtrarNav('roupas')" id="nav-roupas">Roupas</button>
-    <button onclick="filtrarNav('semijoias')" id="nav-semijoias">Semijoias</button>
     <button onclick="filtrarNav('novidades')" id="nav-novidades">Novidades</button>
   </div>
   <button class="nav-mobile-btn" id="nav-mobile-btn" onclick="toggleMenuMobile()">☰</button>
   <button id="btn-carrinho">🛍 Carrinho <span id="badge-qtd"></span></button>
 </nav>
 <div class="nav-mobile-menu" id="nav-mobile-menu">
-  <button onclick="filtrarNav('');fecharMenuMobile()" class="ativo" id="mnav-todos">Home</button>
-  <button onclick="filtrarNav('roupas');fecharMenuMobile()" id="mnav-roupas">Roupas</button>
-  <button onclick="filtrarNav('semijoias');fecharMenuMobile()" id="mnav-semijoias">Semijoias</button>
+  <button onclick="filtrarNav('');fecharMenuMobile()" id="mnav-todos">Home</button>
   <button onclick="filtrarNav('novidades');fecharMenuMobile()" id="mnav-novidades">Novidades</button>
+  <div id="mnav-cats"></div>
 </div>
 
 <div class="hero">
@@ -278,6 +279,7 @@
     <button class="chip ativo" data-cat="">Todos</button>
     <button class="chip" data-cat="novidades">Novidades</button>
   </div>
+  <div class="subfiltros" id="subfiltros"></div>
   <div id="conteudo">
     <div id="estado"><div class="spinner"></div>Carregando produtos…</div>
   </div>
@@ -347,13 +349,20 @@
 </div>
 
 <script>
-  let produtos = [], carrinho = [], categoriaAtiva = "";
+  let categorias = []; // { categoria, pai }
+  let categoriaAtiva = "";
+  let subCategoriaAtiva = "";
 
   async function carregarProdutos() {
     try {
-      const res = await fetch(CONFIG.sheetCsvUrl);
-      if (!res.ok) throw new Error("Não foi possível carregar a planilha.");
-      produtos = parseCsv(await res.text());
+      const [resProd, resCats] = await Promise.all([
+        fetch(CONFIG.sheetCsvUrl),
+        fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarCategorias", senha: "" }) })
+      ]);
+      if (!resProd.ok) throw new Error("Não foi possível carregar a planilha.");
+      produtos = parseCsv(await resProd.text());
+      const dataCats = await resCats.json();
+      categorias = dataCats.ok ? dataCats.categorias : [];
       popularFiltros();
       renderizar();
     } catch (e) {
@@ -399,47 +408,139 @@
     cols.push(atual); return cols;
   }
 
+  /* ── Helpers de categoria ── */
+  function filhosDe(pai) {
+    return categorias.filter(c => c.pai && c.pai.toLowerCase() === pai.toLowerCase()).map(c => c.categoria);
+  }
+  function ehFilhoDe(cat, pai) {
+    return cat.toLowerCase() === pai.toLowerCase() || filhosDe(pai).some(f => f.toLowerCase() === cat.toLowerCase());
+  }
+  function categoriasRaiz() {
+    return categorias.filter(c => !c.pai);
+  }
+
   function popularFiltros() {
-    const cats = [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
     const div = document.getElementById("filtros");
-    cats.forEach(cat => {
+    div.innerHTML = "";
+
+    const btnTodos = document.createElement("button");
+    btnTodos.className = "chip ativo"; btnTodos.dataset.cat = ""; btnTodos.textContent = "Todos";
+    btnTodos.addEventListener("click", () => filtrar("", btnTodos));
+    div.appendChild(btnTodos);
+
+    const btnNov = document.createElement("button");
+    btnNov.className = "chip"; btnNov.dataset.cat = "novidades"; btnNov.textContent = "Novidades";
+    btnNov.addEventListener("click", () => filtrar("novidades", btnNov));
+    div.appendChild(btnNov);
+
+    const raizes = categoriasRaiz();
+    if (raizes.length > 0) {
+      raizes.forEach(c => {
+        const btn = document.createElement("button");
+        btn.className = "chip"; btn.dataset.cat = c.categoria;
+        btn.textContent = c.categoria;
+        btn.addEventListener("click", () => filtrar(c.categoria, btn));
+        div.appendChild(btn);
+      });
+    } else {
+      const cats = [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
+      cats.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "chip"; btn.dataset.cat = cat; btn.textContent = cat;
+        btn.addEventListener("click", () => filtrar(cat, btn));
+        div.appendChild(btn);
+      });
+    }
+
+    const mnav = document.getElementById("mnav-cats");
+    if (mnav) {
+      mnav.innerHTML = "";
+      const raizes = categoriasRaiz();
+      const lista = raizes.length > 0 ? raizes.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
+      lista.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.textContent = cat;
+        btn.addEventListener("click", () => { filtrarNav(cat); fecharMenuMobile(); });
+        mnav.appendChild(btn);
+        filhosDe(cat).forEach(f => {
+          const btnF = document.createElement("button");
+          btnF.textContent = "↳ " + f;
+          btnF.style.cssText = "padding-left:2.5rem;color:var(--ouro-dark);font-size:11px";
+          btnF.addEventListener("click", () => {
+            categoriaAtiva = cat; subCategoriaAtiva = f;
+            document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
+            const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
+            if (chip) chip.classList.add("ativo");
+            mostrarSubcategorias(cat);
+            setTimeout(() => {
+              const sub = document.querySelector(`.chip-sub[data-sub="${f}"]`);
+              if (sub) { document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo")); sub.classList.add("ativo"); }
+            }, 50);
+            renderizar(); fecharMenuMobile();
+          });
+          mnav.appendChild(btnF);
+        });
+      });
+    }
+  }
+
+  function mostrarSubcategorias(pai) {
+    const sub = document.getElementById("subfiltros");
+    const filhos = filhosDe(pai);
+    if (filhos.length === 0) { sub.innerHTML = ""; return; }
+    sub.innerHTML = "";
+    const btnTodos = document.createElement("button");
+    btnTodos.className = "chip chip-sub ativo"; btnTodos.dataset.sub = "";
+    btnTodos.textContent = "Todos de " + pai;
+    btnTodos.addEventListener("click", () => filtrarSub("", btnTodos));
+    sub.appendChild(btnTodos);
+    filhos.forEach(f => {
       const btn = document.createElement("button");
-      btn.className = "chip"; btn.dataset.cat = cat; btn.textContent = cat;
-      btn.addEventListener("click", () => filtrar(cat, btn));
-      div.appendChild(btn);
+      btn.className = "chip chip-sub"; btn.dataset.sub = f; btn.textContent = f;
+      btn.addEventListener("click", () => filtrarSub(f, btn));
+      sub.appendChild(btn);
     });
-    div.querySelector("[data-cat='']").addEventListener("click", e => filtrar("", e.target));
-    div.querySelector("[data-cat='novidades']").addEventListener("click", e => filtrar("novidades", e.target));
   }
 
   function filtrar(cat, btn) {
-    categoriaAtiva = cat;
-    document.querySelectorAll(".chip").forEach(c => c.classList.remove("ativo"));
+    categoriaAtiva = cat; subCategoriaAtiva = "";
+    document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
     btn.classList.add("ativo");
     sincNav(cat);
+    if (cat && cat !== "novidades") mostrarSubcategorias(cat);
+    else document.getElementById("subfiltros").innerHTML = "";
+    renderizar();
+  }
+
+  function filtrarSub(sub, btn) {
+    subCategoriaAtiva = sub;
+    document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo"));
+    btn.classList.add("ativo");
     renderizar();
   }
 
   function filtrarNav(cat) {
-    categoriaAtiva = cat;
+    categoriaAtiva = cat; subCategoriaAtiva = "";
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
-    const ids = { "": "nav-todos", "novidades": "nav-novidades", "roupas": "nav-roupas", "semijoias": "nav-semijoias" };
+    const ids = { "": "nav-todos", "novidades": "nav-novidades" };
     const nb = document.getElementById(ids[cat] || "nav-todos");
     if (nb) nb.classList.add("ativo");
-    document.querySelectorAll(".chip").forEach(c => c.classList.remove("ativo"));
+    document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
     const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
     if (chip) chip.classList.add("ativo");
+    if (cat && cat !== "novidades") mostrarSubcategorias(cat);
+    else document.getElementById("subfiltros").innerHTML = "";
     renderizar();
   }
 
   function sincNav(cat) {
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
-    const ids = { "": "nav-todos", "novidades": "nav-novidades", "roupas": "nav-roupas", "semijoias": "nav-semijoias" };
+    const ids = { "": "nav-todos", "novidades": "nav-novidades" };
     const nb = document.getElementById(ids[cat] || "nav-todos");
     if (nb) nb.classList.add("ativo");
   }
 
-  document.getElementById("busca").addEventListener("input", renderizar);
+  document.getElementById("busca").addEventListener("input", () => { subCategoriaAtiva = ""; renderizar(); });
 
   function renderizar() {
     const termo = document.getElementById("busca").value.toLowerCase();
@@ -448,7 +549,10 @@
       const mb = !termo || p.nome.toLowerCase().includes(termo) || (p.descricao || "").toLowerCase().includes(termo);
       if (!mb) return false;
       if (categoriaAtiva === "novidades") return p.badge === "novo";
+      if (subCategoriaAtiva) return p.categoria?.toLowerCase() === subCategoriaAtiva.toLowerCase();
       if (categoriaAtiva === "") return true;
+      const raizes = categoriasRaiz();
+      if (raizes.length > 0) return ehFilhoDe(p.categoria || "", categoriaAtiva);
       return p.categoria?.toLowerCase() === categoriaAtiva.toLowerCase();
     });
     conteudo.innerHTML = "";

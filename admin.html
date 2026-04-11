@@ -131,7 +131,13 @@
     .btn-pri:hover { background: var(--pri-dark); border-color: var(--pri-dark); }
     .btn-pri:disabled { background: #ccc; border-color: #ccc; cursor: default; }
 
-    /* ── Variantes ── */
+    .cat-linha { display: grid; grid-template-columns: 1fr 1fr 32px; gap: 8px; align-items: center; }
+    .cat-linha input, .cat-linha select { padding: 7px 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 13px; font-family: inherit; color: var(--texto); background: #fff; outline: none; width: 100%; }
+    .cat-linha input:focus, .cat-linha select:focus { border-color: var(--pri); }
+    .btn-del-cat { background: none; border: 1px solid var(--borda); border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 14px; height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .btn-del-cat:hover { border-color: var(--danger); color: var(--danger); }
+    .cats-header { display: grid; grid-template-columns: 1fr 1fr 32px; gap: 8px; margin-bottom: 6px; }
+    .cats-header span { font-size: 11px; color: var(--muted); font-weight: 500; }
     .variante-linha { display: grid; grid-template-columns: 1fr 1fr 80px 28px; gap: 6px; align-items: center; }
     .variante-linha input { padding: 6px 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 13px; font-family: inherit; color: var(--texto); background: #fff; outline: none; width: 100%; }
     .variante-linha input:focus { border-color: var(--pri); }
@@ -212,6 +218,7 @@
     <div class="abas">
       <button class="aba-btn ativa" onclick="trocarAba('produtos', this)">Produtos</button>
       <button class="aba-btn" onclick="trocarAba('banner', this)">Banner do site</button>
+      <button class="aba-btn" onclick="trocarAba('categorias', this)">Categorias</button>
     </div>
 
     <div id="aba-produtos" class="aba-conteudo ativa">
@@ -242,6 +249,17 @@
       <div style="margin-top:1.25rem;display:flex;align-items:center;gap:12px">
         <button class="banner-salvar" id="btn-salvar-banner" onclick="salvarBanner()">Salvar banner</button>
         <span id="banner-status" style="font-size:13px;color:var(--muted)"></span>
+      </div>
+    </div>
+
+    <div id="aba-categorias" class="aba-conteudo">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem">Configure a hierarquia de categorias. Deixe o campo "Categoria pai" vazio para categorias principais.</p>
+      <div id="cats-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;max-width:600px;"></div>
+      <button onclick="adicionarLinhaCat()" style="font-size:12px;padding:6px 16px;border:1px dashed var(--borda);background:none;border-radius:6px;cursor:pointer;color:var(--muted);margin-bottom:1.25rem">+ Adicionar categoria</button>
+      <br>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="banner-salvar" id="btn-salvar-cats" onclick="salvarCategorias()">Salvar categorias</button>
+        <span id="cats-status" style="font-size:13px;color:var(--muted)"></span>
       </div>
     </div>
   </main>
@@ -678,6 +696,7 @@
     btn.classList.add("ativa");
     document.getElementById("aba-" + aba).classList.add("ativa");
     if (aba === "banner") carregarBanner();
+    if (aba === "categorias") carregarCategorias();
   }
 
   /* ── Banner ─────────────────────────────────────────── */
@@ -742,6 +761,64 @@
     btn.disabled = false; btn.textContent = "Salvar banner";
     if (res.ok) { toast("Banner salvo!"); document.getElementById("banner-status").textContent = ""; }
     else toast("Erro ao salvar: " + res.erro);
+  }
+
+  /* ── Categorias ─────────────────────────────────────── */
+  let catsData = [];
+
+  async function carregarCategorias() {
+    document.getElementById("cats-status").textContent = "Carregando…";
+    const res = await api({ acao: "listarCategorias", senha });
+    document.getElementById("cats-status").textContent = "";
+    if (res.ok) { catsData = res.categorias || []; renderCategorias(); }
+    else toast("Erro ao carregar categorias: " + res.erro);
+  }
+
+  function renderCategorias() {
+    const lista = document.getElementById("cats-lista");
+    lista.innerHTML = `
+      <div class="cats-header">
+        <span>Nome da categoria</span>
+        <span>Categoria pai (deixe vazio se for principal)</span>
+        <span></span>
+      </div>`;
+    catsData.forEach((c, idx) => adicionarLinhaCat(c.categoria, c.pai, idx));
+  }
+
+  function adicionarLinhaCat(nome = "", pai = "", idx = null) {
+    const lista = document.getElementById("cats-lista");
+    const linha = document.createElement("div");
+    linha.className = "cat-linha";
+    const paisDisponiveis = catsData.filter(c => !c.pai).map(c => c.categoria);
+    const opts = paisDisponiveis.map(p => `<option value="${p}" ${p === pai ? "selected" : ""}>${p}</option>`).join("");
+    linha.innerHTML = `
+      <input type="text" placeholder="Ex: Blusas" value="${nome}" class="cat-nome" />
+      <select class="cat-pai">
+        <option value="">— nenhum (categoria principal) —</option>
+        ${opts}
+      </select>
+      <button type="button" class="btn-del-cat" title="Remover">✕</button>`;
+    linha.querySelector(".btn-del-cat").addEventListener("click", () => { linha.remove(); });
+    lista.appendChild(linha);
+  }
+
+  async function salvarCategorias() {
+    const linhas = document.querySelectorAll(".cat-linha");
+    const cats = [];
+    linhas.forEach(l => {
+      const nome = l.querySelector(".cat-nome").value.trim();
+      const pai = l.querySelector(".cat-pai").value.trim();
+      if (nome) cats.push({ categoria: nome, pai });
+    });
+    const btn = document.getElementById("btn-salvar-cats");
+    btn.disabled = true; btn.textContent = "Salvando…";
+    const res = await api({ acao: "salvarCategorias", senha, categorias: cats });
+    btn.disabled = false; btn.textContent = "Salvar categorias";
+    if (res.ok) {
+      catsData = cats;
+      toast("Categorias salvas!");
+      document.getElementById("cats-status").textContent = "";
+    } else toast("Erro: " + res.erro);
   }
 </script>
 </body>
