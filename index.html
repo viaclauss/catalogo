@@ -92,7 +92,7 @@
     .item-controles button { width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--borda); background: none; cursor: pointer; font-size: 14px; color: var(--texto); }
     .item-controles span { font-family: -apple-system, sans-serif; font-size: 13px; min-width: 18px; text-align: center; }
     .btn-remover { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; padding: 4px; }
-    .painel-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--borda); }
+    .painel-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--borda); position: sticky; bottom: 0; background: #fff; z-index: 1; }
     .total-linha { display: flex; justify-content: space-between; font-family: -apple-system, sans-serif; font-size: 15px; font-weight: 500; margin-bottom: 1rem; }
     #btn-checkout { width: 100%; padding: 12px; background: #25D366; color: #fff; border: none; border-radius: var(--raio); font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
     #btn-checkout:hover { background: #1da851; }
@@ -149,9 +149,9 @@
     .var-secao { margin-bottom: 14px; }
     .var-label { font-family: -apple-system, sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
     .var-opcoes { display: flex; gap: 6px; flex-wrap: wrap; }
-    .var-btn { padding: 5px 14px; border-radius: 4px; border: 1px solid var(--borda); background: #fff; font-family: -apple-system, sans-serif; font-size: 12px; cursor: pointer; transition: all 0.12s; color: var(--texto); }
-    .var-btn:hover:not(:disabled) { border-color: var(--ouro); color: var(--ouro); }
-    .var-btn.sel { background: var(--ouro); color: #fff; border-color: var(--ouro); }
+    .var-btn { padding: 5px 14px; border-radius: 4px; border: 1px solid var(--borda); background: #fff; font-family: -apple-system, sans-serif; font-size: 12px; cursor: pointer; transition: all 0.12s; color: var(--texto); -webkit-tap-highlight-color: transparent; }
+    .var-btn:hover:not(:disabled):not(.sel) { border-color: var(--ouro); color: var(--ouro); }
+    .var-btn.sel { background: var(--ouro) !important; color: #fff !important; border-color: var(--ouro) !important; }
     .var-btn.esgotado { background: #f5f5f5; color: #bbb; border-color: #eee; cursor: default; text-decoration: line-through; }
 
     footer { background: var(--texto); padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
