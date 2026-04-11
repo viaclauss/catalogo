@@ -12,7 +12,6 @@
       --texto: #3a2a1e; --muted: #8a6a5a; --borda: #e8d5c4; --raio: 4px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
     body { font-family: Georgia, serif; background: var(--fundo); color: var(--texto); min-height: 100vh; }
 
     nav { background: #fff; border-bottom: 1px solid var(--borda); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
@@ -428,7 +427,7 @@
     } else {
       carrinho.push({ ...prod, qtd: 1, _chave: chave, _variante: variante });
     }
-    atualizarCarrinho(); abrirCarrinho();
+    atualizarCarrinho();
   }
 
   function atualizarCarrinho() {
