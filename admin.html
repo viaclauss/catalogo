@@ -299,8 +299,20 @@
       <div class="linha-2">
         <div class="campo">
           <label>Categoria *</label>
-          <input type="text" id="campo-categoria" placeholder="Ex: Vestidos" />
+          <select id="campo-cat-pai" onchange="atualizarSubcats()">
+            <option value="">Selecione…</option>
+          </select>
         </div>
+        <div class="campo">
+          <label>Subcategoria <span style="font-size:11px;font-weight:400;color:var(--muted)">(opcional)</span></label>
+          <select id="campo-cat-filho">
+            <option value="">— nenhuma —</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="campo-categoria" />
+
+      <div class="linha-2">
         <div class="campo">
           <label>Preço *</label>
           <input type="text" id="campo-preco" placeholder="Ex: 189,90" />
@@ -473,6 +485,7 @@
     document.getElementById("modal-titulo").textContent = titulo;
     document.getElementById("overlay").classList.add("vis");
     document.getElementById("modal").classList.add("vis");
+    popularDropdownsCats();
   }
 
   function fecharModal() {
@@ -486,6 +499,8 @@
     fotoUploadUrl = "";
     document.getElementById("campo-nome").value = "";
     document.getElementById("campo-categoria").value = "";
+    document.getElementById("campo-cat-pai").value = "";
+    document.getElementById("campo-cat-filho").innerHTML = `<option value="">— nenhuma —</option>`;
     document.getElementById("campo-preco").value = "";
     document.getElementById("campo-desc").value = "";
     document.getElementById("campo-badge").value = "";
@@ -509,6 +524,19 @@
     fotoUploadUrl = p.imagem || "";
     abrirModal("Editar produto");
     document.getElementById("campo-nome").value = p.nome || "";
+    const catVal = (p.categoria || "").toString().trim();
+    if (catVal.includes(" > ")) {
+      const [pai, filho] = catVal.split(" > ");
+      document.getElementById("campo-cat-pai").value = pai.trim();
+      atualizarSubcats();
+      document.getElementById("campo-cat-filho").value = filho.trim();
+      sincCampoCategoria();
+    } else {
+      document.getElementById("campo-cat-pai").value = catVal;
+      atualizarSubcats();
+      document.getElementById("campo-cat-filho").value = "";
+      sincCampoCategoria();
+    }
     document.getElementById("campo-categoria").value = p.categoria || "";
     const preco = parseBRPreco(p.preco);
     document.getElementById("campo-preco").value = preco ? preco.toFixed(2).replace(".", ",") : "";
@@ -578,7 +606,47 @@
     return resp.url;
   }
 
-  /* ── Variantes ──────────────────────────────────────── */
+  /* ── Dropdowns de categoria ─────────────────────────── */
+  function popularDropdownsCats() {
+    const pais = catsData.filter(c => !c.pai).map(c => c.categoria);
+    const sel = document.getElementById("campo-cat-pai");
+    const valorAtual = sel.value;
+    sel.innerHTML = `<option value="">Selecione…</option>`;
+    pais.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p; opt.textContent = p;
+      sel.appendChild(opt);
+    });
+    if (valorAtual) sel.value = valorAtual;
+    atualizarSubcats();
+  }
+
+  function atualizarSubcats() {
+    const pai = document.getElementById("campo-cat-pai").value;
+    const sel = document.getElementById("campo-cat-filho");
+    const valorAtual = sel.value;
+    sel.innerHTML = `<option value="">— nenhuma —</option>`;
+    if (pai) {
+      const filhos = catsData.filter(c => c.pai && c.pai.toLowerCase() === pai.toLowerCase());
+      filhos.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f.categoria; opt.textContent = f.categoria;
+        sel.appendChild(opt);
+      });
+      if (valorAtual) sel.value = valorAtual;
+    }
+    sincCampoCategoria();
+  }
+
+  function sincCampoCategoria() {
+    const pai = document.getElementById("campo-cat-pai").value.trim();
+    const filho = document.getElementById("campo-cat-filho").value.trim();
+    document.getElementById("campo-categoria").value = filho ? `${pai} > ${filho}` : pai;
+  }
+
+  document.addEventListener("change", e => {
+    if (e.target.id === "campo-cat-filho") sincCampoCategoria();
+  });
   function adicionarLinhaVariante(cor = "", tamanho = "", qtd = "") {
     const lista = document.getElementById("lista-variantes");
     if (!lista) return;
@@ -770,7 +838,7 @@
     document.getElementById("cats-status").textContent = "Carregando…";
     const res = await api({ acao: "listarCategorias", senha });
     document.getElementById("cats-status").textContent = "";
-    if (res.ok) { catsData = res.categorias || []; renderCategorias(); }
+    if (res.ok) { catsData = res.categorias || []; renderCategorias(); popularDropdownsCats(); }
     else toast("Erro ao carregar categorias: " + res.erro);
   }
 

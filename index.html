@@ -392,19 +392,35 @@
 
   async function carregarProdutos() {
     try {
-      const [resProd, resCats] = await Promise.all([
-        fetch(CONFIG.sheetCsvUrl),
-        fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarCategorias", senha: "" }) })
-      ]);
-      if (!resProd.ok) throw new Error("Não foi possível carregar a planilha.");
-      produtos = parseCsv(await resProd.text());
-      const dataCats = await resCats.json();
-      categorias = dataCats.ok ? dataCats.categorias : [];
+      const res = await fetch(CONFIG.sheetCsvUrl);
+      if (!res.ok) throw new Error("Não foi possível carregar a planilha.");
+      produtos = parseCsv(await res.text());
+      construirHierarquia();
       popularFiltros();
       renderizar();
     } catch (e) {
       document.getElementById("conteudo").innerHTML = `<div id="estado"><p>⚠️ Erro ao carregar produtos.<br><small>${e.message}</small></p></div>`;
     }
+  }
+
+  function construirHierarquia() {
+    categorias = [];
+    const vistos = new Set();
+    produtos.forEach(p => {
+      const cat = (p.categoria || "").trim();
+      if (!cat) return;
+      if (cat.includes(" > ")) {
+        const [pai, filho] = cat.split(" > ").map(s => s.trim());
+        if (!vistos.has(pai)) { categorias.push({ categoria: pai, pai: "" }); vistos.add(pai); }
+        if (!vistos.has(cat)) { categorias.push({ categoria: filho, pai }); vistos.add(cat); }
+        p.categoriaPai = pai;
+        p.categoriaFilho = filho;
+      } else {
+        if (!vistos.has(cat)) { categorias.push({ categoria: cat, pai: "" }); vistos.add(cat); }
+        p.categoriaPai = cat;
+        p.categoriaFilho = "";
+      }
+    });
   }
 
   function parseCsv(text) {
@@ -624,11 +640,10 @@
       const mb = !termo || p.nome.toLowerCase().includes(termo) || (p.descricao || "").toLowerCase().includes(termo);
       if (!mb) return false;
       if (categoriaAtiva === "novidades") return p.badge === "novo";
-      if (subCategoriaAtiva) return p.categoria?.toLowerCase() === subCategoriaAtiva.toLowerCase();
+      if (subCategoriaAtiva) return p.categoriaFilho?.toLowerCase() === subCategoriaAtiva.toLowerCase();
       if (categoriaAtiva === "") return true;
-      const raizes = categoriasRaiz();
-      if (raizes.length > 0) return ehFilhoDe(p.categoria || "", categoriaAtiva);
-      return p.categoria?.toLowerCase() === categoriaAtiva.toLowerCase();
+      return p.categoriaPai?.toLowerCase() === categoriaAtiva.toLowerCase() ||
+             p.categoria?.toLowerCase() === categoriaAtiva.toLowerCase();
     });
     conteudo.innerHTML = "";
     if (filtrados.length === 0) { conteudo.innerHTML = `<div id="estado">Nenhum produto encontrado.</div>`; return; }
