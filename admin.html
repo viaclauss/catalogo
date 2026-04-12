@@ -131,7 +131,16 @@
     .btn-pri:hover { background: var(--pri-dark); border-color: var(--pri-dark); }
     .btn-pri:disabled { background: #ccc; border-color: #ccc; cursor: default; }
 
-    .cat-linha { display: grid; grid-template-columns: 1fr 1fr 32px; gap: 8px; align-items: center; }
+    .prio-item { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--borda); border-radius: 8px; padding: 8px 12px; cursor: grab; user-select: none; transition: box-shadow 0.15s; }
+    .prio-item:active { cursor: grabbing; }
+    .prio-item.drag-over { border-color: var(--pri); box-shadow: 0 0 0 2px rgba(127,119,221,0.2); }
+    .prio-item.dragging { opacity: 0.4; }
+    .prio-handle { color: var(--muted); font-size: 16px; flex-shrink: 0; }
+    .prio-num { font-family: -apple-system, sans-serif; font-size: 12px; color: var(--muted); min-width: 24px; text-align: center; }
+    .prio-img { width: 36px; height: 46px; object-fit: cover; border-radius: 4px; background: #f0eef9; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; }
+    .prio-img img { width: 100%; height: 100%; object-fit: cover; }
+    .prio-nome { font-size: 13px; flex: 1; }
+    .prio-cat { font-size: 11px; color: var(--muted); }
     .cat-linha input, .cat-linha select { padding: 7px 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 13px; font-family: inherit; color: var(--texto); background: #fff; outline: none; width: 100%; }
     .cat-linha input:focus, .cat-linha select:focus { border-color: var(--pri); }
     .btn-del-cat { background: none; border: 1px solid var(--borda); border-radius: 6px; cursor: pointer; color: var(--muted); font-size: 14px; height: 32px; width: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -217,8 +226,18 @@
   <main>
     <div class="abas">
       <button class="aba-btn ativa" onclick="trocarAba('produtos', this)">Produtos</button>
+      <button class="aba-btn" onclick="trocarAba('prioridade', this)">Prioridade</button>
       <button class="aba-btn" onclick="trocarAba('banner', this)">Banner do site</button>
       <button class="aba-btn" onclick="trocarAba('categorias', this)">Categorias</button>
+    </div>
+
+    <div id="aba-prioridade" class="aba-conteudo">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem">Arraste as peças para definir a ordem de exibição no site. A posição aqui define o número na coluna <strong>ordem</strong> da planilha.</p>
+      <div id="prioridade-lista" style="display:flex;flex-direction:column;gap:6px;max-width:600px;margin-bottom:1.5rem;"></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="banner-salvar" id="btn-salvar-prioridade" onclick="salvarPrioridade()">Salvar ordem</button>
+        <span id="prioridade-status" style="font-size:13px;color:var(--muted)"></span>
+      </div>
     </div>
 
     <div id="aba-produtos" class="aba-conteudo ativa">
@@ -299,15 +318,13 @@
       <div class="linha-2">
         <div class="campo">
           <label>Categoria *</label>
-          <select id="campo-cat-pai" onchange="atualizarSubcats()">
-            <option value="">Selecione…</option>
-          </select>
+          <input type="text" id="campo-cat-pai" list="list-cats-pai" placeholder="Ex: Blusas" oninput="atualizarSubcats()" autocomplete="off" />
+          <datalist id="list-cats-pai"></datalist>
         </div>
         <div class="campo">
           <label>Subcategoria <span style="font-size:11px;font-weight:400;color:var(--muted)">(opcional)</span></label>
-          <select id="campo-cat-filho">
-            <option value="">— nenhuma —</option>
-          </select>
+          <input type="text" id="campo-cat-filho" list="list-cats-filho" placeholder="Ex: Croppeds" oninput="sincCampoCategoria()" autocomplete="off" />
+          <datalist id="list-cats-filho"></datalist>
         </div>
       </div>
       <input type="hidden" id="campo-categoria" />
@@ -380,6 +397,8 @@
       document.getElementById("tela-admin").style.display = "block";
       renderTabela(res.produtos);
       document.getElementById("loading").style.display = "none";
+      const resCats = await api({ acao: "listarCategorias", senha: s });
+      if (resCats.ok) { catsData = resCats.categorias || []; }
     } else {
       document.getElementById("erro-login").style.display = "block";
     }
@@ -500,7 +519,7 @@
     document.getElementById("campo-nome").value = "";
     document.getElementById("campo-categoria").value = "";
     document.getElementById("campo-cat-pai").value = "";
-    document.getElementById("campo-cat-filho").innerHTML = `<option value="">— nenhuma —</option>`;
+    document.getElementById("campo-cat-filho").value = "";
     document.getElementById("campo-preco").value = "";
     document.getElementById("campo-desc").value = "";
     document.getElementById("campo-badge").value = "";
@@ -526,17 +545,14 @@
     document.getElementById("campo-nome").value = p.nome || "";
     const catVal = (p.categoria || "").toString().trim();
     if (catVal.includes(" > ")) {
-      const [pai, filho] = catVal.split(" > ");
-      document.getElementById("campo-cat-pai").value = pai.trim();
-      atualizarSubcats();
-      document.getElementById("campo-cat-filho").value = filho.trim();
-      sincCampoCategoria();
+      const [pai, filho] = catVal.split(" > ").map(s => s.trim());
+      document.getElementById("campo-cat-pai").value = pai;
+      document.getElementById("campo-cat-filho").value = filho;
     } else {
       document.getElementById("campo-cat-pai").value = catVal;
-      atualizarSubcats();
       document.getElementById("campo-cat-filho").value = "";
-      sincCampoCategoria();
     }
+    atualizarSubcats();
     document.getElementById("campo-categoria").value = p.categoria || "";
     const preco = parseBRPreco(p.preco);
     document.getElementById("campo-preco").value = preco ? preco.toFixed(2).replace(".", ",") : "";
@@ -609,32 +625,16 @@
   /* ── Dropdowns de categoria ─────────────────────────── */
   function popularDropdownsCats() {
     const pais = catsData.filter(c => !c.pai).map(c => c.categoria);
-    const sel = document.getElementById("campo-cat-pai");
-    const valorAtual = sel.value;
-    sel.innerHTML = `<option value="">Selecione…</option>`;
-    pais.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p; opt.textContent = p;
-      sel.appendChild(opt);
-    });
-    if (valorAtual) sel.value = valorAtual;
+    const dl = document.getElementById("list-cats-pai");
+    dl.innerHTML = pais.map(p => `<option value="${p}">`).join("");
     atualizarSubcats();
   }
 
   function atualizarSubcats() {
-    const pai = document.getElementById("campo-cat-pai").value;
-    const sel = document.getElementById("campo-cat-filho");
-    const valorAtual = sel.value;
-    sel.innerHTML = `<option value="">— nenhuma —</option>`;
-    if (pai) {
-      const filhos = catsData.filter(c => c.pai && c.pai.toLowerCase() === pai.toLowerCase());
-      filhos.forEach(f => {
-        const opt = document.createElement("option");
-        opt.value = f.categoria; opt.textContent = f.categoria;
-        sel.appendChild(opt);
-      });
-      if (valorAtual) sel.value = valorAtual;
-    }
+    const pai = document.getElementById("campo-cat-pai").value.trim();
+    const dl = document.getElementById("list-cats-filho");
+    const filhos = catsData.filter(c => c.pai && c.pai.toLowerCase() === pai.toLowerCase());
+    dl.innerHTML = filhos.map(f => `<option value="${f.categoria}">`).join("");
     sincCampoCategoria();
   }
 
@@ -644,9 +644,21 @@
     document.getElementById("campo-categoria").value = filho ? `${pai} > ${filho}` : pai;
   }
 
-  document.addEventListener("change", e => {
-    if (e.target.id === "campo-cat-filho") sincCampoCategoria();
-  });
+  async function garantirCategoriasSalvas(pai, filho) {
+    const novos = [];
+    const paiExiste = catsData.some(c => !c.pai && c.categoria.toLowerCase() === pai.toLowerCase());
+    if (!paiExiste && pai) novos.push({ categoria: pai, pai: "" });
+    if (filho) {
+      const filhoExiste = catsData.some(c => c.pai && c.pai.toLowerCase() === pai.toLowerCase() && c.categoria.toLowerCase() === filho.toLowerCase());
+      if (!filhoExiste) novos.push({ categoria: filho, pai });
+    }
+    if (novos.length > 0) {
+      const novaLista = [...catsData, ...novos];
+      await api({ acao: "salvarCategorias", senha, categorias: novaLista });
+      catsData = novaLista;
+      popularDropdownsCats();
+    }
+  }
   function adicionarLinhaVariante(cor = "", tamanho = "", qtd = "") {
     const lista = document.getElementById("lista-variantes");
     if (!lista) return;
@@ -703,6 +715,10 @@
 
     try {
       const urlFoto = await fazerUploadSePreciso();
+      const pai = document.getElementById("campo-cat-pai").value.trim();
+      const filho = document.getElementById("campo-cat-filho").value.trim();
+      await garantirCategoriasSalvas(pai, filho);
+      sincCampoCategoria();
       const variantesEl = document.getElementById("lista-variantes");
       const variantes = variantesEl ? serializarVariantes() : "";
       const dados = {
@@ -765,6 +781,7 @@
     document.getElementById("aba-" + aba).classList.add("ativa");
     if (aba === "banner") carregarBanner();
     if (aba === "categorias") carregarCategorias();
+    if (aba === "prioridade") carregarPrioridade();
   }
 
   /* ── Banner ─────────────────────────────────────────── */
@@ -831,7 +848,71 @@
     else toast("Erro ao salvar: " + res.erro);
   }
 
-  /* ── Categorias ─────────────────────────────────────── */
+  /* ── Prioridade ─────────────────────────────────────── */
+  let ordemAtual = [];
+
+  function carregarPrioridade() {
+    ordemAtual = [...produtosCache].sort((a, b) => {
+      const oa = parseInt(a.ordem) || 9999;
+      const ob = parseInt(b.ordem) || 9999;
+      return oa - ob;
+    });
+    renderPrioridade();
+  }
+
+  function renderPrioridade() {
+    const lista = document.getElementById("prioridade-lista");
+    lista.innerHTML = "";
+    ordemAtual.forEach((p, idx) => {
+      const div = document.createElement("div");
+      div.className = "prio-item";
+      div.draggable = true;
+      div.dataset.idx = idx;
+      const imgHtml = p.imagem
+        ? `<div class="prio-img"><img src="${p.imagem}" /></div>`
+        : `<div class="prio-img">🧥</div>`;
+      div.innerHTML = `
+        <span class="prio-handle">⠿</span>
+        <span class="prio-num">${idx + 1}</span>
+        ${imgHtml}
+        <div>
+          <p class="prio-nome">${p.nome || ""}</p>
+          <p class="prio-cat">${p.categoria || ""}</p>
+        </div>`;
+      div.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", idx); div.classList.add("dragging"); });
+      div.addEventListener("dragend", () => div.classList.remove("dragging"));
+      div.addEventListener("dragover", e => { e.preventDefault(); div.classList.add("drag-over"); });
+      div.addEventListener("dragleave", () => div.classList.remove("drag-over"));
+      div.addEventListener("drop", e => {
+        e.preventDefault(); div.classList.remove("drag-over");
+        const de = parseInt(e.dataTransfer.getData("text/plain"));
+        const para = parseInt(div.dataset.idx);
+        if (de === para) return;
+        const item = ordemAtual.splice(de, 1)[0];
+        ordemAtual.splice(para, 0, item);
+        renderPrioridade();
+      });
+      lista.appendChild(div);
+    });
+  }
+
+  async function salvarPrioridade() {
+    const btn = document.getElementById("btn-salvar-prioridade");
+    const status = document.getElementById("prioridade-status");
+    btn.disabled = true; btn.textContent = "Salvando…";
+    status.textContent = `0 de ${ordemAtual.length}…`;
+    let erros = 0;
+    for (let i = 0; i < ordemAtual.length; i++) {
+      const p = ordemAtual[i];
+      status.textContent = `${i + 1} de ${ordemAtual.length}…`;
+      const res = await api({ acao: "editar", senha, linha: p.linha, ordem: i + 1 });
+      if (!res.ok) erros++;
+    }
+    btn.disabled = false; btn.textContent = "Salvar ordem";
+    status.textContent = erros > 0 ? `${erros} erro(s)` : "Ordem salva!";
+    setTimeout(() => { status.textContent = ""; }, 3000);
+    recarregar();
+  }
   let catsData = [];
 
   async function carregarCategorias() {

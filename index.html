@@ -184,9 +184,16 @@
     .footer-mono { font-size: 32px; font-weight: 700; color: var(--ouro); letter-spacing: -2px; }
     .footer-links { display: flex; gap: 24px; }
     .nav-mobile-btn { display: none; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px; padding: 4px; }
-    .nav-mobile-menu { display: none; position: fixed; top: 48px; left: 0; right: 0; background: #fff; border-bottom: 1px solid var(--borda); z-index: 99; padding: 0.5rem 0; }
-    .nav-mobile-menu button { display: block; width: 100%; text-align: left; padding: 12px 1.5rem; font-family: -apple-system, sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: pointer; }
+    .nav-mobile-menu { display: none; position: fixed; top: 48px; left: 0; right: 0; background: #fff; border-bottom: 1px solid var(--borda); z-index: 99; padding: 0.5rem 0; max-height: 70vh; overflow-y: auto; }
+    .nav-mobile-menu button { display: block; width: 100%; text-align: left; padding: 12px 1.5rem; font-family: -apple-system, sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .nav-mobile-menu button:hover, .nav-mobile-menu button.ativo { color: var(--ouro); background: var(--rose); }
+    .mnav-pai { display: flex; justify-content: space-between; align-items: center; }
+    .mnav-pai .mnav-arrow { font-size: 10px; transition: transform 0.2s; margin-right: 1.5rem; }
+    .mnav-pai.expandido .mnav-arrow { transform: rotate(180deg); }
+    .mnav-filhos { display: none; }
+    .mnav-filhos.vis { display: block; }
+    .mnav-filho { padding-left: 2.5rem !important; font-size: 11px !important; color: var(--ouro-dark) !important; border-left: 2px solid var(--rose-mid); }
+    .mnav-filho.ativo { color: var(--ouro) !important; background: var(--rose) !important; }
     @media (max-width: 768px) { .nav-mobile-btn { display: block; } }
 
     @media (max-width: 768px) {
@@ -207,6 +214,10 @@
       #busca { font-size: 16px; }
       .filtros { gap: 6px; }
       .chip { font-size: 10px; padding: 5px 12px; }
+
+      /* Filtros — esconder no mobile, ficam só no hamburguer */
+      .filtros { display: none; }
+      .subfiltros-wrap { display: none; }
 
       /* Grade */
       .grade { grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -286,7 +297,7 @@
   <div class="hero-banner">
     <div class="carrossel" id="hero-carrossel">
       <div class="carrossel-slides" id="carrossel-slides">
-        <div class="carrossel-slide"><div class="carrossel-slide-ph"></div></div>
+        <div class="carrossel-slide"><div class="carrossel-slide-ph">💎</div></div>
       </div>
       <div class="carrossel-dots" id="carrossel-dots"></div>
     </div>
@@ -404,6 +415,11 @@
       produtos = parseCsv(await res.text());
       construirHierarquia();
       popularFiltros();
+      categoriaAtiva = "novidades";
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("ativo"));
+      const chipNov = document.querySelector(".chip[data-cat='novidades']");
+      if (chipNov) chipNov.classList.add("ativo");
+      sincNav("novidades");
       renderizar();
     } catch (e) {
       document.getElementById("conteudo").innerHTML = `<div id="estado"><p>⚠️ Erro ao carregar produtos.<br><small>${e.message}</small></p></div>`;
@@ -517,14 +533,65 @@
       const raizes2 = categoriasRaiz();
       const lista = raizes2.length > 0 ? raizes2.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoriaPai).filter(Boolean))];
       lista.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.textContent = cat + (filhosDe(cat).length > 0 ? " ▾" : "");
-        btn.addEventListener("click", () => {
-          filtrarNav(cat);
-          fecharMenuMobile();
-          if (filhosDe(cat).length > 0) setTimeout(() => abrirSheetMobile(cat), 200);
-        });
-        mnav.appendChild(btn);
+        const filhos = filhosDe(cat);
+        const temFilhos = filhos.length > 0;
+
+        const btnPai = document.createElement("button");
+        btnPai.className = "mnav-pai";
+        btnPai.innerHTML = `<span>${cat}</span>${temFilhos ? `<span class="mnav-arrow">▾</span>` : ""}`;
+
+        if (temFilhos) {
+          const divFilhos = document.createElement("div");
+          divFilhos.className = "mnav-filhos";
+
+          const btnTodos = document.createElement("button");
+          btnTodos.className = "mnav-filho";
+          btnTodos.textContent = "Todos de " + cat;
+          btnTodos.addEventListener("click", () => {
+            document.querySelectorAll(".mnav-filho").forEach(b => b.classList.remove("ativo"));
+            btnTodos.classList.add("ativo");
+            filtrarSub("", cat, null);
+            fecharMenuMobile();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+          divFilhos.appendChild(btnTodos);
+
+          filhos.forEach(f => {
+            const btnF = document.createElement("button");
+            btnF.className = "mnav-filho";
+            btnF.textContent = f;
+            btnF.addEventListener("click", () => {
+              document.querySelectorAll(".mnav-filho").forEach(b => b.classList.remove("ativo"));
+              btnF.classList.add("ativo");
+              filtrarSub(f, cat, null);
+              fecharMenuMobile();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+            divFilhos.appendChild(btnF);
+          });
+
+          btnPai.addEventListener("click", () => {
+            const aberto = divFilhos.classList.contains("vis");
+            document.querySelectorAll(".mnav-filhos").forEach(d => d.classList.remove("vis"));
+            document.querySelectorAll(".mnav-pai").forEach(b => b.classList.remove("expandido"));
+            if (!aberto) {
+              divFilhos.classList.add("vis");
+              btnPai.classList.add("expandido");
+            }
+            categoriaAtiva = cat; subCategoriaAtiva = ""; subCategoriaPai = "";
+            renderizar();
+          });
+
+          mnav.appendChild(btnPai);
+          mnav.appendChild(divFilhos);
+        } else {
+          btnPai.addEventListener("click", () => {
+            filtrarNav(cat);
+            fecharMenuMobile();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+          mnav.appendChild(btnPai);
+        }
       });
     }
   }
