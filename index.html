@@ -386,9 +386,21 @@
 </div>
 
 <script>
-  let categorias = []; // { categoria, pai }
-  let categoriaAtiva = "";
-  let subCategoriaAtiva = "";
+  let produtos = [], carrinho = [], categoriaAtiva = "", subCategoriaAtiva = "", subCategoriaPai = "";
+  let categorias = [];
+
+  /* ── Home scroll ao topo ── */
+  document.getElementById("nav-todos").addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  document.getElementById("mnav-todos")?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+  /* ── History API — botão voltar do celular ── */
+  function pushEstado(estado) { history.pushState(estado, ""); }
+  window.addEventListener("popstate", e => {
+    const estado = e.state;
+    if (!estado) return;
+    if (estado.tipo === "detalhe") { fecharDetalhe(); return; }
+    if (estado.tipo === "carrinho") { fecharCarrinho(); return; }
+  });
 
   async function carregarProdutos() {
     try {
@@ -437,8 +449,9 @@
       } else {
         obj.estoque = obj.estoque !== "" && obj.estoque !== undefined ? parseInt(obj.estoque) : 99;
       }
+      obj.ordem = obj.ordem !== "" && obj.ordem !== undefined ? parseInt(obj.ordem) || 9999 : 9999;
       return obj;
-    }).filter(p => p.nome);
+    }).filter(p => p.nome).sort((a, b) => a.ordem - b.ordem);
   }
 
   function parseVariantes(str) {
@@ -464,9 +477,6 @@
   /* ── Helpers de categoria ── */
   function filhosDe(pai) {
     return categorias.filter(c => c.pai && c.pai.toLowerCase() === pai.toLowerCase()).map(c => c.categoria);
-  }
-  function ehFilhoDe(cat, pai) {
-    return cat.toLowerCase() === pai.toLowerCase() || filhosDe(pai).some(f => f.toLowerCase() === cat.toLowerCase());
   }
   function categoriasRaiz() {
     return categorias.filter(c => !c.pai);
@@ -497,7 +507,7 @@
         div.appendChild(btn);
       });
     } else {
-      const cats = [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
+      const cats = [...new Set(produtos.map(p => p.categoriaPai).filter(Boolean))];
       cats.forEach(cat => {
         const btn = document.createElement("button");
         btn.className = "chip"; btn.dataset.cat = cat; btn.textContent = cat;
@@ -509,8 +519,8 @@
     const mnav = document.getElementById("mnav-cats");
     if (mnav) {
       mnav.innerHTML = "";
-      const raizes = categoriasRaiz();
-      const lista = raizes.length > 0 ? raizes.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoria).filter(Boolean))];
+      const raizes2 = categoriasRaiz();
+      const lista = raizes2.length > 0 ? raizes2.map(c => c.categoria) : [...new Set(produtos.map(p => p.categoriaPai).filter(Boolean))];
       lista.forEach(cat => {
         const btn = document.createElement("button");
         btn.textContent = cat + (filhosDe(cat).length > 0 ? " ▾" : "");
@@ -528,19 +538,17 @@
     const filhos = filhosDe(pai);
     const wrap = document.getElementById("subfiltros-wrap");
     const sub = document.getElementById("subfiltros");
-
     if (filhos.length === 0) { wrap.classList.remove("aberta"); sub.innerHTML = ""; return; }
-
     sub.innerHTML = "";
     const btnTodos = document.createElement("button");
-    btnTodos.className = "chip-sub ativo"; btnTodos.dataset.sub = "";
-    btnTodos.textContent = "Todos de " + pai;
-    btnTodos.addEventListener("click", () => filtrarSub("", btnTodos));
+    btnTodos.className = "chip-sub ativo"; btnTodos.dataset.sub = ""; btnTodos.dataset.pai = pai;
+    btnTodos.textContent = "Todos";
+    btnTodos.addEventListener("click", () => filtrarSub("", pai, btnTodos));
     sub.appendChild(btnTodos);
     filhos.forEach(f => {
       const btn = document.createElement("button");
-      btn.className = "chip-sub"; btn.dataset.sub = f; btn.textContent = f;
-      btn.addEventListener("click", () => filtrarSub(f, btn));
+      btn.className = "chip-sub"; btn.dataset.sub = f; btn.dataset.pai = pai; btn.textContent = f;
+      btn.addEventListener("click", () => filtrarSub(f, pai, btn));
       sub.appendChild(btn);
     });
     wrap.classList.add("aberta");
@@ -558,57 +566,85 @@
     const opcoes = document.getElementById("sheet-opcoes");
     opcoes.innerHTML = "";
     const btnTodos = document.createElement("button");
-    btnTodos.className = "sheet-opcao todos"; btnTodos.textContent = "Todos de " + pai;
-    btnTodos.addEventListener("click", () => { filtrarSub("", null); fecharSheet(); });
+    btnTodos.className = "sheet-opcao todos ativo"; btnTodos.textContent = "Todos de " + pai;
+    btnTodos.addEventListener("click", () => { filtrarSub("", pai, null); fecharSheet(); });
     opcoes.appendChild(btnTodos);
     filhos.forEach(f => {
       const btn = document.createElement("button");
-      btn.className = "sheet-opcao"; btn.textContent = f;
-      btn.addEventListener("click", () => { filtrarSub(f, null); fecharSheet(); });
+      btn.className = "sheet-opcao" + (subCategoriaAtiva === f ? " ativo" : ""); btn.textContent = f;
+      btn.addEventListener("click", () => {
+        opcoes.querySelectorAll(".sheet-opcao").forEach(b => b.classList.remove("ativo"));
+        btn.classList.add("ativo");
+        setTimeout(() => { filtrarSub(f, pai, null); fecharSheet(); }, 180);
+      });
       opcoes.appendChild(btn);
     });
     const sheet = document.getElementById("sheet-cats");
     sheet.classList.add("vis");
     document.body.style.overflow = "hidden";
+    iniciarDragSheet();
   }
 
   function fecharSheet() {
-    document.getElementById("sheet-cats").classList.remove("vis");
-    document.body.style.overflow = "";
+    const box = document.getElementById("sheet-box");
+    box.style.transition = "transform 0.3s ease";
+    box.style.transform = "translateY(100%)";
+    setTimeout(() => {
+      document.getElementById("sheet-cats").classList.remove("vis");
+      box.style.transform = "";
+      document.body.style.overflow = "";
+    }, 300);
+  }
+
+  function iniciarDragSheet() {
+    const box = document.getElementById("sheet-box");
+    const handle = box.querySelector(".sheet-handle");
+    let startY = 0, currentY = 0, dragging = false;
+    const onStart = e => {
+      startY = e.touches ? e.touches[0].clientY : e.clientY;
+      dragging = true; box.style.transition = "none";
+    };
+    const onMove = e => {
+      if (!dragging) return;
+      currentY = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+      if (currentY > 0) box.style.transform = `translateY(${currentY}px)`;
+    };
+    const onEnd = () => {
+      dragging = false;
+      if (currentY > 80) { fecharSheet(); }
+      else { box.style.transition = "transform 0.3s ease"; box.style.transform = ""; }
+      currentY = 0;
+    };
+    box.addEventListener("touchstart", onStart, { passive: true });
+    box.addEventListener("touchmove", onMove, { passive: true });
+    box.addEventListener("touchend", onEnd);
   }
 
   document.getElementById("sheet-overlay").addEventListener("click", fecharSheet);
 
   function filtrar(cat, btn) {
-    categoriaAtiva = cat; subCategoriaAtiva = "";
+    categoriaAtiva = cat; subCategoriaAtiva = ""; subCategoriaPai = "";
     document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
     if (btn) btn.classList.add("ativo");
     sincNav(cat);
     if (cat && cat !== "novidades" && filhosDe(cat).length > 0) {
-      if (window.innerWidth <= 768) {
-        abrirSheetMobile(cat);
-      } else {
-        mostrarSubcategorias(cat);
-      }
+      if (window.innerWidth <= 768) abrirSheetMobile(cat);
+      else mostrarSubcategorias(cat);
     } else {
       fecharSubcategorias();
     }
     renderizar();
   }
 
-  function filtrarSub(sub, btn) {
-    subCategoriaAtiva = sub;
+  function filtrarSub(sub, pai, btn) {
+    subCategoriaAtiva = sub; subCategoriaPai = pai;
     document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo"));
     if (btn) btn.classList.add("ativo");
-    else {
-      const chip = document.querySelector(`.chip-sub[data-sub="${sub}"]`);
-      if (chip) { document.querySelectorAll(".chip-sub").forEach(c => c.classList.remove("ativo")); chip.classList.add("ativo"); }
-    }
     renderizar();
   }
 
   function filtrarNav(cat) {
-    categoriaAtiva = cat; subCategoriaAtiva = "";
+    categoriaAtiva = cat; subCategoriaAtiva = ""; subCategoriaPai = "";
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
     const ids = { "": "nav-todos", "novidades": "nav-novidades" };
     const nb = document.getElementById(ids[cat] || "nav-todos");
@@ -616,11 +652,8 @@
     document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
     const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
     if (chip) chip.classList.add("ativo");
-    if (cat && cat !== "novidades" && filhosDe(cat).length > 0 && window.innerWidth > 768) {
-      mostrarSubcategorias(cat);
-    } else {
-      fecharSubcategorias();
-    }
+    if (cat && cat !== "novidades" && filhosDe(cat).length > 0 && window.innerWidth > 768) mostrarSubcategorias(cat);
+    else fecharSubcategorias();
     renderizar();
   }
 
@@ -640,23 +673,24 @@
       const mb = !termo || p.nome.toLowerCase().includes(termo) || (p.descricao || "").toLowerCase().includes(termo);
       if (!mb) return false;
       if (categoriaAtiva === "novidades") return p.badge === "novo";
-      if (subCategoriaAtiva) return p.categoriaFilho?.toLowerCase() === subCategoriaAtiva.toLowerCase();
+      if (subCategoriaAtiva) return p.categoriaFilho?.toLowerCase() === subCategoriaAtiva.toLowerCase()
+        && p.categoriaPai?.toLowerCase() === subCategoriaPai.toLowerCase();
       if (categoriaAtiva === "") return true;
-      return p.categoriaPai?.toLowerCase() === categoriaAtiva.toLowerCase() ||
-             p.categoria?.toLowerCase() === categoriaAtiva.toLowerCase();
+      return p.categoriaPai?.toLowerCase() === categoriaAtiva.toLowerCase();
     });
     conteudo.innerHTML = "";
     if (filtrados.length === 0) { conteudo.innerHTML = `<div id="estado">Nenhum produto encontrado.</div>`; return; }
     if (categoriaAtiva === "" && !termo) {
-      const cats = [...new Set(filtrados.map(p => p.categoria).filter(Boolean))];
-      cats.forEach(cat => {
+      const pais = [...new Set(filtrados.map(p => p.categoriaPai).filter(Boolean))];
+      pais.forEach(pai => {
+        const grupo = filtrados.filter(p => p.categoriaPai === pai);
         const sec = document.createElement("div"); sec.className = "secao";
-        sec.innerHTML = `<div class="secao-header"><div class="secao-linha"></div><div class="secao-titulo">${cat}</div><div class="secao-linha"></div></div><div class="grade"></div>`;
-        filtrados.filter(p => p.categoria === cat).forEach(prod => sec.querySelector(".grade").appendChild(criarCard(prod)));
+        sec.innerHTML = `<div class="secao-header"><div class="secao-linha"></div><div class="secao-titulo">${pai}</div><div class="secao-linha"></div></div><div class="grade"></div>`;
+        grupo.forEach(prod => sec.querySelector(".grade").appendChild(criarCard(prod)));
         conteudo.appendChild(sec);
       });
     } else {
-      const titulo = categoriaAtiva === "novidades" ? "Novidades" : (categoriaAtiva || "Resultados");
+      const titulo = categoriaAtiva === "novidades" ? "Novidades" : subCategoriaAtiva || categoriaAtiva || "Resultados";
       const sec = document.createElement("div"); sec.className = "secao";
       sec.innerHTML = `<div class="secao-header"><div class="secao-linha"></div><div class="secao-titulo">${titulo}</div><div class="secao-linha"></div></div><div class="grade"></div>`;
       filtrados.forEach(prod => sec.querySelector(".grade").appendChild(criarCard(prod)));
@@ -749,7 +783,7 @@
     });
   }
 
-  function abrirCarrinho() { document.getElementById("painel-carrinho").classList.add("aberto"); document.getElementById("overlay").classList.add("visivel"); atualizarCarrinho(); }
+  function abrirCarrinho() { document.getElementById("painel-carrinho").classList.add("aberto"); document.getElementById("overlay").classList.add("visivel"); atualizarCarrinho(); pushEstado({ tipo: "carrinho" }); }
   function fecharCarrinho() { document.getElementById("painel-carrinho").classList.remove("aberto"); document.getElementById("overlay").classList.remove("visivel"); }
   document.getElementById("btn-carrinho").addEventListener("click", abrirCarrinho);
   document.getElementById("btn-fechar-carrinho").addEventListener("click", fecharCarrinho);
@@ -825,6 +859,7 @@
     else { rel.forEach(r => { const d = document.createElement("div"); d.className = "rel-card"; d.innerHTML = `<div class="rel-img">${r.imagem ? `<img src="${imgUrl(r.imagem, 300)}" alt="${r.nome}" loading="lazy" />` : "🧥"}</div><p class="rel-nome">${r.nome}</p><p class="rel-preco">R$ ${r.preco.toFixed(2).replace(".", ",")}</p>`; d.addEventListener("click", () => abrirDetalhe(r)); rg.appendChild(d); }); }
     document.getElementById("painel-detalhe").classList.add("visivel");
     document.body.style.overflow = "hidden";
+    pushEstado({ tipo: "detalhe" });
   }
 
   function selecionarCor(prod, cor) {
@@ -921,7 +956,7 @@
 
   async function carregarCarrosselViaApi() {
     try {
-      const res = await fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarBanner", senha: "" }) });
+      const res = await fetch(CONFIG.apiUrl, { method: "POST", body: JSON.stringify({ acao: "listarBanner" }) });
       const data = await res.json();
       if (!data.ok || !data.urls || data.urls.length === 0) return;
       const slides = document.getElementById("carrossel-slides");
