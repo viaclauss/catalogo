@@ -26,11 +26,8 @@
     .hero { background: var(--rose); border-bottom: 1px solid var(--borda); text-align: center; padding: 2.5rem 1rem 2rem; }
     .hero-mono { font-size: 52px; font-weight: 700; color: var(--ouro); letter-spacing: -3px; line-height: 1; margin-bottom: 4px; }
     .hero-nome { font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--ouro); margin-bottom: 2rem; }
-    .hero-banner { display: grid; grid-template-columns: 1fr 1.7fr 1fr; gap: 8px; max-width: 680px; margin: 0 auto; }
-    .hero-cell { background: var(--rose-mid); border-radius: var(--raio); aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 40px; position: relative; overflow: hidden; }
-    .hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(184,150,90,0.9); padding: 14px 10px; text-align: center; }
-    .hero-overlay p { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: #fff; line-height: 1.6; }
-    .carrossel { border-radius: var(--raio); aspect-ratio: 3/4; overflow: hidden; position: relative; background: var(--rose-deep); }
+    .hero-banner { max-width: 680px; margin: 0 auto; }
+    .carrossel { border-radius: var(--raio); aspect-ratio: 4/3; overflow: hidden; position: relative; background: var(--rose-deep); }
     .carrossel-slides { display: flex; height: 100%; transition: transform 0.6s ease; will-change: transform; }
     .carrossel-slide { min-width: 100%; height: 100%; flex-shrink: 0; }
     .carrossel-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -287,14 +284,12 @@
   <div class="hero-mono">VC</div>
   <div class="hero-nome">Via Clauss</div>
   <div class="hero-banner">
-    <div class="hero-cell">👗</div>
     <div class="carrossel" id="hero-carrossel">
       <div class="carrossel-slides" id="carrossel-slides">
         <div class="carrossel-slide"><div class="carrossel-slide-ph">💎</div></div>
       </div>
       <div class="carrossel-dots" id="carrossel-dots"></div>
     </div>
-    <div class="hero-cell">✨</div>
   </div>
 </div>
 
