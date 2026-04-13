@@ -26,8 +26,8 @@
     .hero { background: var(--rose); border-bottom: 1px solid var(--borda); text-align: center; padding: 2.5rem 1rem 2rem; }
     .hero-mono { font-size: 52px; font-weight: 700; color: var(--ouro); letter-spacing: -3px; line-height: 1; margin-bottom: 4px; }
     .hero-nome { font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--ouro); margin-bottom: 2rem; }
-    .hero-banner { max-width: 680px; margin: 0 auto; }
-    .carrossel { border-radius: var(--raio); aspect-ratio: 4/3; overflow: hidden; position: relative; background: var(--rose-deep); }
+    .hero-banner { max-width: 860px; margin: 0 auto; }
+    .carrossel { border-radius: var(--raio); aspect-ratio: 16/9; overflow: hidden; position: relative; background: var(--rose-deep); }
     .carrossel-slides { display: flex; height: 100%; transition: transform 0.6s ease; will-change: transform; }
     .carrossel-slide { min-width: 100%; height: 100%; flex-shrink: 0; }
     .carrossel-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -145,10 +145,19 @@
     .detalhe-header span { font-family: -apple-system, sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ouro); }
     .detalhe-fechar { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--muted); }
     .detalhe-corpo { display: grid; grid-template-columns: 1.2fr 1fr; overflow: hidden; flex: 1; }
-    .detalhe-esq { background: var(--rose); display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 400px; cursor: zoom-in; position: relative; }
-    .detalhe-esq img { width: 100%; height: 100%; object-fit: contain; max-height: 640px; transition: transform 0.3s ease; transform-origin: center center; }
-    .detalhe-esq.zoom img { transform: scale(2.2); cursor: zoom-out; }
-    .detalhe-esq.zoom { cursor: zoom-out; }
+    .detalhe-esq { background: var(--rose); display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 400px; position: relative; }
+    .galeria-slides { display: flex; height: 100%; width: 100%; transition: transform 0.35s ease; }
+    .galeria-slide { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: zoom-in; }
+    .galeria-slide img { width: 100%; height: 100%; object-fit: contain; max-height: 640px; transition: transform 0.3s ease; transform-origin: center center; }
+    .galeria-slide.zoom { cursor: zoom-out; }
+    .galeria-slide.zoom img { transform: scale(2.2); }
+    .galeria-dots { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+    .galeria-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(0,0,0,0.2); border: none; padding: 0; pointer-events: all; cursor: pointer; transition: background 0.2s; }
+    .galeria-dot.ativo { background: var(--ouro); }
+    .galeria-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--texto); }
+    .galeria-nav.prev { left: 8px; }
+    .galeria-nav.next { right: 8px; }
+    .galeria-nav:hover { background: #fff; }
     .detalhe-esq-ph { font-size: 80px; }
     .detalhe-dir { display: flex; flex-direction: column; overflow: hidden; }
     .detalhe-info { padding: 2rem; border-bottom: 1px solid var(--borda); flex-shrink: 0; overflow-y: auto; }
@@ -182,7 +191,11 @@
 
     footer { background: var(--texto); padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .footer-mono { font-size: 32px; font-weight: 700; color: var(--ouro); letter-spacing: -2px; }
-    .footer-links { display: flex; gap: 24px; }
+    .footer-logo-img { height: 40px; width: auto; }
+    .footer-links { display: flex; gap: 24px; align-items: center; }
+    .footer-contato { display: flex; align-items: center; gap: 8px; background: #25D366; color: #fff; border: none; border-radius: 99px; padding: 8px 16px; font-family: -apple-system, sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; text-decoration: none; }
+    .footer-contato:hover { background: #1da851; }
+    .hero-logo-img { height: 60px; width: auto; margin-bottom: 4px; }
     .nav-mobile-btn { display: none; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px; padding: 4px; }
     .nav-mobile-menu { display: none; position: fixed; top: 48px; left: 0; right: 0; background: #fff; border-bottom: 1px solid var(--borda); z-index: 99; padding: 0.5rem 0; max-height: 70vh; overflow-y: auto; }
     .nav-mobile-menu button { display: block; width: 100%; text-align: left; padding: 13px 1.5rem; font-family: -apple-system, sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background 0.15s, color 0.15s; }
@@ -248,7 +261,7 @@
       .detalhe-box { max-width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
       .detalhe-header { flex-shrink: 0; }
       .detalhe-corpo { grid-template-columns: 1fr; flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
-      .detalhe-esq { max-height: 60vw; min-height: 180px; flex-shrink: 0; cursor: default; }
+      .detalhe-esq { max-height: 75vw; min-height: 260px; flex-shrink: 0; cursor: default; }
       .detalhe-esq img { touch-action: pinch-zoom; }
       .detalhe-dir { overflow: visible; }
       .detalhe-info { border-bottom: none; overflow: visible; }
@@ -276,6 +289,8 @@
     whatsapp: "5543998155361",
     sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_LdiAMOmESy6itG4E8O1zd4oPuQlBHZNoKBqj-kAv1aqXw8yEMwxG1igBry04IRF63kIwBKHpvH2/pub?output=csv",
     apiUrl: "https://script.google.com/macros/s/AKfycbzBxZS2Fu3J-9kdXGj2-yLZAP0Qv_aBBhP13qV7J9Drg3elVwrmXrszTcKcXHHdneEy/exec",
+    // Cole aqui a URL do seu logo VC em PNG (hospede no Drive ou Imgur)
+    logoUrl: "",
   };
 </script>
 
@@ -283,6 +298,7 @@
   <div class="nav-links">
     <button onclick="filtrarNav('')" class="ativo" id="nav-todos">Home</button>
     <button onclick="filtrarNav('novidades')" id="nav-novidades">Novidades</button>
+    <button onclick="filtrarNav('promocao')" id="nav-promocao">Promoção</button>
   </div>
   <button class="nav-mobile-btn" id="nav-mobile-btn" onclick="toggleMenuMobile()">☰</button>
   <button id="btn-carrinho">🛍 Carrinho <span id="badge-qtd"></span></button>
@@ -290,11 +306,14 @@
 <div class="nav-mobile-menu" id="nav-mobile-menu">
   <button onclick="filtrarNav('');fecharMenuMobile()" id="mnav-todos">Home</button>
   <button onclick="filtrarNav('novidades');fecharMenuMobile()" id="mnav-novidades">Novidades</button>
+  <button onclick="filtrarNav('promocao');fecharMenuMobile()" id="mnav-promocao">Promoção</button>
   <div id="mnav-cats"></div>
 </div>
 
 <div class="hero">
-  <div class="hero-mono">VC</div>
+  <div id="hero-logo-wrap">
+    <div class="hero-mono" id="hero-mono">VC</div>
+  </div>
   <div class="hero-nome">Via Clauss</div>
   <div class="hero-banner">
     <div class="carrossel" id="hero-carrossel">
@@ -321,10 +340,13 @@
 </main>
 
 <footer>
-  <div class="footer-mono">VC</div>
+  <div id="footer-logo-wrap"><div class="footer-mono">VC</div></div>
   <div class="footer-links">
     <a>Trocas e devoluções</a>
-    <a>Contato</a>
+    <a id="footer-contato-link" class="footer-contato" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.525 4.003 1.444 5.697L0 24l6.47-1.424A11.93 11.93 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.797 9.797 0 01-5.003-1.374l-.359-.213-3.723.819.839-3.625-.234-.372A9.779 9.779 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+      Contato
+    </a>
   </div>
 </footer>
 
@@ -463,6 +485,8 @@
         obj.estoque = obj.estoque !== "" && obj.estoque !== undefined ? parseInt(obj.estoque) : 99;
       }
       obj.ordem = obj.ordem !== "" && obj.ordem !== undefined ? parseInt(obj.ordem) || 9999 : 9999;
+      obj.imagens = (obj.imagem || "").split("|").map(u => u.trim()).filter(Boolean);
+      obj.imagem = obj.imagens[0] || "";
       return obj;
     }).filter(p => p.nome).sort((a, b) => a.ordem - b.ordem);
   }
@@ -708,7 +732,7 @@
   function filtrarNav(cat) {
     categoriaAtiva = cat; subCategoriaAtiva = ""; subCategoriaPai = "";
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
-    const ids = { "": "nav-todos", "novidades": "nav-novidades" };
+    const ids = { "": "nav-todos", "novidades": "nav-novidades", "promocao": "nav-promocao" };
     const nb = document.getElementById(ids[cat] || "nav-todos");
     if (nb) nb.classList.add("ativo");
     document.querySelectorAll(".chip:not(.chip-sub)").forEach(c => c.classList.remove("ativo"));
@@ -721,7 +745,7 @@
 
   function sincNav(cat) {
     document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("ativo"));
-    const ids = { "": "nav-todos", "novidades": "nav-novidades" };
+    const ids = { "": "nav-todos", "novidades": "nav-novidades", "promocao": "nav-promocao" };
     const nb = document.getElementById(ids[cat] || "nav-todos");
     if (nb) nb.classList.add("ativo");
   }
@@ -735,6 +759,7 @@
       const mb = !termo || p.nome.toLowerCase().includes(termo) || (p.descricao || "").toLowerCase().includes(termo);
       if (!mb) return false;
       if (categoriaAtiva === "novidades") return p.badge === "novo";
+      if (categoriaAtiva === "promocao") return p.badge === "promo";
       if (subCategoriaAtiva) return p.categoriaFilho?.toLowerCase() === subCategoriaAtiva.toLowerCase()
         && p.categoriaPai?.toLowerCase() === subCategoriaPai.toLowerCase();
       if (categoriaAtiva === "") return true;
@@ -873,7 +898,48 @@
   function abrirDetalhe(prod) {
     varianteSelecionada = null;
     const w = document.getElementById("detalhe-img-wrap");
-    w.innerHTML = prod.imagem ? `<img src="${imgUrl(prod.imagem, 1200)}" alt="${prod.nome}" />` : `<div class="detalhe-esq-ph">🧥</div>`;
+    const imgs = prod.imagens && prod.imagens.length > 0 ? prod.imagens : (prod.imagem ? [prod.imagem] : []);
+    if (imgs.length === 0) {
+      w.innerHTML = `<div class="detalhe-esq-ph">🧥</div>`;
+    } else {
+      let gIdx = 0;
+      const slidesHtml = imgs.map(url => `<div class="galeria-slide"><img src="${imgUrl(url, 1200)}" alt="${prod.nome}" /></div>`).join("");
+      const dotsHtml = imgs.length > 1 ? `<div class="galeria-dots">${imgs.map((_, i) => `<button class="galeria-dot${i===0?' ativo':''}" data-i="${i}"></button>`).join("")}</div>` : "";
+      const navsHtml = imgs.length > 1 ? `<button class="galeria-nav prev" id="g-prev">‹</button><button class="galeria-nav next" id="g-next">›</button>` : "";
+      w.innerHTML = `<div class="galeria-slides" id="galeria-slides">${slidesHtml}</div>${dotsHtml}${navsHtml}`;
+      const moverGaleria = (idx) => {
+        gIdx = (idx + imgs.length) % imgs.length;
+        document.getElementById("galeria-slides").style.transform = `translateX(-${gIdx * 100}%)`;
+        w.querySelectorAll(".galeria-dot").forEach((d, i) => d.classList.toggle("ativo", i === gIdx));
+      };
+      w.querySelectorAll(".galeria-dot").forEach(d => d.addEventListener("click", () => moverGaleria(parseInt(d.dataset.i))));
+      const prev = w.querySelector("#g-prev"); if (prev) prev.addEventListener("click", e => { e.stopPropagation(); moverGaleria(gIdx - 1); });
+      const next = w.querySelector("#g-next"); if (next) next.addEventListener("click", e => { e.stopPropagation(); moverGaleria(gIdx + 1); });
+      // Swipe touch
+      let touchX = 0;
+      w.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, { passive: true });
+      w.addEventListener("touchend", e => { const dx = e.changedTouches[0].clientX - touchX; if (Math.abs(dx) > 40) moverGaleria(gIdx + (dx < 0 ? 1 : -1)); }, { passive: true });
+      // Zoom no desktop (só single click, não quando swipe)
+      w.querySelectorAll(".galeria-slide").forEach(slide => {
+        slide.addEventListener("click", () => {
+          if (window.innerWidth <= 768) return;
+          slide.classList.toggle("zoom");
+        });
+        slide.addEventListener("mousemove", e => {
+          if (!slide.classList.contains("zoom")) return;
+          const rect = slide.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          const img = slide.querySelector("img");
+          if (img) img.style.transformOrigin = `${x}% ${y}%`;
+        });
+        slide.addEventListener("mouseleave", () => {
+          slide.classList.remove("zoom");
+          const img = slide.querySelector("img");
+          if (img) img.style.transformOrigin = "center center";
+        });
+      });
+    }
     document.getElementById("detalhe-breadcrumb").textContent = prod.categoria || "";
     document.getElementById("detalhe-cat").textContent = prod.categoria || "";
     document.getElementById("detalhe-nome").textContent = prod.nome;
@@ -968,25 +1034,18 @@
   document.getElementById("btn-fechar-detalhe").addEventListener("click", fecharDetalhe);
   document.getElementById("painel-detalhe").addEventListener("click", function(e) { if (e.target === this) fecharDetalhe(); });
 
-  /* ── Zoom na imagem (só desktop) ── */
-  const imgWrap = document.getElementById("detalhe-img-wrap");
-  imgWrap.addEventListener("click", function() {
-    if (window.innerWidth <= 768) return;
-    this.classList.toggle("zoom");
-  });
-  imgWrap.addEventListener("mousemove", function(e) {
-    if (!this.classList.contains("zoom")) return;
-    const rect = this.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    const img = this.querySelector("img");
-    if (img) img.style.transformOrigin = `${x}% ${y}%`;
-  });
-  imgWrap.addEventListener("mouseleave", function() {
-    this.classList.remove("zoom");
-    const img = this.querySelector("img");
-    if (img) img.style.transformOrigin = "center center";
-  });
+  /* ── Logo e contato ──────────────────────────────────── */
+  function initLogo() {
+    if (CONFIG.logoUrl) {
+      const heroWrap = document.getElementById("hero-logo-wrap");
+      if (heroWrap) heroWrap.innerHTML = `<img src="${CONFIG.logoUrl}" class="hero-logo-img" alt="Via Clauss" />`;
+      const footerWrap = document.getElementById("footer-logo-wrap");
+      if (footerWrap) footerWrap.innerHTML = `<img src="${CONFIG.logoUrl}" class="footer-logo-img" alt="Via Clauss" />`;
+    }
+    const contato = document.getElementById("footer-contato-link");
+    if (contato) contato.href = `https://wa.me/${CONFIG.whatsapp}`;
+  }
+  initLogo();
 
   /* ── Carrossel banner ──────────────────────────────────── */
   let carrosselIdx = 0;
