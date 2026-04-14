@@ -924,10 +924,36 @@
     const fone = document.getElementById("campo-fone").value.trim();
     const obs = document.getElementById("campo-obs").value.trim();
     if (!nome || !fone) { alert("Preencha seu nome e WhatsApp para continuar."); return; }
-    const itens = carrinho.map(i => `• ${i.nome}${i._variante ? " (" + i._variante + ")" : ""} (x${i.qtd}) — R$ ${(i.preco * i.qtd).toFixed(2).replace(".", ",")}`).join("\n");
-    const total = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
-    let msg = `*Novo pedido — ${CONFIG.nomeLoja}*\n\n*Cliente:* ${nome}\n*Contato:* ${fone}\n\n*Itens:*\n${itens}\n\n*Total: R$ ${total.toFixed(2).replace(".", ",")}*`;
-    if (obs) msg += `\n\n*Observações:* ${obs}`;
+    let total = 0;
+    let itens = "";
+    
+    carrinho.forEach(i => {
+      itens += `🧥 ${i.nome}\n`;
+      itens += `• Código: ${i.codigo || "-"}\n`;
+    
+      if (i._variante) {
+        itens += `• ${i._variante}\n`;
+      }
+    
+      itens += `• Qtd: ${i.qtd}\n`;
+      itens += `• R$ ${(i.preco * i.qtd).toFixed(2).replace(".", ",")}\n\n`;
+    
+      total += i.preco * i.qtd;
+    });
+    
+    let msg = `🛍️ *Novo Pedido — ${CONFIG.nomeLoja}*\n\n`;
+    
+    msg += `👤 Nome: ${nome}\n`;
+    msg += `📞 Telefone: ${fone}\n`;
+    
+    if (obs) {
+      msg += `📝 Observações: ${obs}\n`;
+    }
+    
+    msg += `\n──────────────\n\n`;
+    msg += itens;
+    msg += `──────────────\n\n`;
+    msg += `💰 Total: R$ ${total.toFixed(2).replace(".", ",")}`;
     window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, "_blank");
     carrinho = []; atualizarCarrinho();
     document.getElementById("modal-checkout").classList.remove("visivel"); document.getElementById("overlay").classList.remove("visivel");
