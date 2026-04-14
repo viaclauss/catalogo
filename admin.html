@@ -484,7 +484,7 @@
         <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.descricao || ""}</td>
         <td>${badgeHtml}</td>
         <td style="font-size:12px;max-width:140px">${(p.variantes ? deserializarVariantes(p.variantes).map(v => `${v.cor}${v.tam?"/"+v.tam:""}:${v.qtd}`).join(", ") : "") || (p.estoque ?? "")}</td>
-        <td><code>${p.codigo || '-'}</code></td> <td>
+        <td><code>${p.codigo || '-'}</code></td>
         <td>
           <div class="acoes">
             <button class="btn-editar" data-idx="${idx}">Editar</button>
