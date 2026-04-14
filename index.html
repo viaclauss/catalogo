@@ -928,7 +928,7 @@
     let itens = "";
     
     carrinho.forEach(i => {
-      itens += `* ${i.nome}\n`;
+      itens += `📌 ${i.nome}\n`;
       itens += `• Código: ${i.codigo || "-"}\n`;
     
       if (i._variante) {
@@ -941,19 +941,19 @@
       total += i.preco * i.qtd;
     });
     
-    let msg = `* *Novo Pedido — ${CONFIG.nomeLoja}*\n\n`;
+    let msg = `📌 *Novo Pedido — ${CONFIG.nomeLoja}*\n\n`;
     
-    msg += `* Nome: ${nome}\n`;
-    msg += `* Telefone: ${fone}\n`;
+    msg += `📌 Nome: ${nome}\n`;
+    msg += `📌 Telefone: ${fone}\n`;
     
     if (obs) {
-      msg += `* Observações: ${obs}\n`;
+      msg += `📌 Observações: ${obs}\n`;
     }
     
     msg += `\n──────────────\n\n`;
     msg += itens;
     msg += `──────────────\n\n`;
-    msg += `* Total: R$ ${total.toFixed(2).replace(".", ",")}`;
+    msg += `📌 Total: R$ ${total.toFixed(2).replace(".", ",")}`;
     window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, "_blank");
     carrinho = []; atualizarCarrinho();
     document.getElementById("modal-checkout").classList.remove("visivel"); document.getElementById("overlay").classList.remove("visivel");
