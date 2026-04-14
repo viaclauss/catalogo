@@ -797,7 +797,7 @@
     const termo = document.getElementById("busca").value.toLowerCase();
     const conteudo = document.getElementById("conteudo");
     const filtrados = produtos.filter(p => {
-      const mb = !termo || p.nome.toLowerCase().includes(termo) || (p.descricao || "").toLowerCase().includes(termo);
+      const mb = !termo || p.nome.toLowerCase().includes(termo) || (p.descricao || "").toLowerCase().includes(termo) || (p.codigo || "").toLowerCase().includes(termo);
       if (!mb) return false;
       if (categoriaAtiva === "novidades") return p.badge === "novo";
       if (categoriaAtiva === "promocao") return p.badge === "promo";
