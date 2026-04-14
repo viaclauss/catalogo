@@ -481,10 +481,10 @@
         <td style="font-weight:500">${p.nome || ""}</td>
         <td>${p.categoria || ""}</td>
         <td>R$ ${preco.toFixed(2).replace(".", ",")}</td>
-        <td><code>${p.codigo || '-'}</code></td> <td>
         <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.descricao || ""}</td>
         <td>${badgeHtml}</td>
         <td style="font-size:12px;max-width:140px">${(p.variantes ? deserializarVariantes(p.variantes).map(v => `${v.cor}${v.tam?"/"+v.tam:""}:${v.qtd}`).join(", ") : "") || (p.estoque ?? "")}</td>
+        <td><code>${p.codigo || '-'}</code></td> <td>
         <td>
           <div class="acoes">
             <button class="btn-editar" data-idx="${idx}">Editar</button>
