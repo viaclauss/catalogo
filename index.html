@@ -926,7 +926,32 @@
     if (!nome || !fone) { alert("Preencha seu nome e WhatsApp para continuar."); return; }
     const itens = carrinho.map(i => `• ${i.nome}${i._variante ? " (" + i._variante + ")" : ""} (x${i.qtd}) — R$ ${(i.preco * i.qtd).toFixed(2).replace(".", ",")}`).join("\n");
     const total = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
-    let msg = `*Novo pedido — ${CONFIG.nomeLoja}*\n\n*Cliente:* ${nome}\n*Contato:* ${fone}\n\n*Itens:*\n${itens}\n\n*Total: R$ ${total.toFixed(2).replace(".", ",")}*`;
+    let msg = `🛍️ *Novo Pedido — Via Clauss*\n\n`;
+  
+    msg += `👤 Nome: ${cliente.nome}\n`;
+    msg += `📞 Telefone: ${cliente.telefone}\n`;
+    msg += `📍 Endereço: ${cliente.endereco}\n\n`;
+  
+    msg += `──────────────\n\n`;
+  
+    let total = 0;
+  
+    carrinho.forEach(item => {
+      msg += `🧥 ${item.nome}\n`;
+      msg += `• Código: ${item.codigo || "-"}\n`;
+  
+      if (item.variante) {
+        msg += `• ${item.variante}\n`;
+      }
+  
+      msg += `• Qtd: ${item.qtd}\n`;
+      msg += `• R$ ${item.preco}\n\n`;
+  
+      total += item.qtd * parseFloat(item.preco.replace(",", "."));
+    });
+  
+    msg += `──────────────\n\n`;
+    msg += `💰 Total: R$ ${total.toFixed(2).replace(".", ",")}`;
     if (obs) msg += `\n\n*Observações:* ${obs}`;
     window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, "_blank");
     carrinho = []; atualizarCarrinho();
