@@ -244,7 +244,10 @@
     </div>
 
     <div id="aba-produtos" class="aba-conteudo ativa">
-      <button id="btn-novo" onclick="abrirModal()">+ Novo produto</button>
+      <div style="display:flex; gap: 12px; margin-bottom: 1.5rem;">
+        <button id="btn-novo" style="margin-bottom: 0;" onclick="abrirModal()">+ Novo produto</button>
+        <button class="btn" id="btn-gerar-codigos" onclick="gerarCodigosFaltantes()">Gerar Códigos Faltantes</button>
+      </div>
       <div class="tabela-wrap">
         <table id="tabela">
           <thead>
@@ -732,8 +735,11 @@
 
       let res;
       if (linhaEditando) {
+        // Se estiver editando, não enviamos o código, assim o script.txt mantém o existente.
         res = await api({ ...dados, acao: "editar", linha: linhaEditando });
       } else {
+        // Se for novo, gera um código aleatório (6 caracteres, letras maiúsculas e números)
+        dados.codigo = Math.random().toString(36).substring(2, 8).toUpperCase();
         res = await api({ ...dados, acao: "adicionar" });
       }
 
@@ -753,6 +759,43 @@
     }
   }
 
+  /* ── Códigos em Lote ────────────────────────────────── */
+  async function gerarCodigosFaltantes() {
+    // Busca os produtos que vieram da planilha e que não têm a propriedade "codigo" ou ela está vazia
+    const semCodigo = produtosCache.filter(p => !p.codigo || p.codigo.toString().trim() === "");
+
+    if (semCodigo.length === 0) {
+      toast("Todas as peças já possuem código!");
+      return;
+    }
+
+    if (!confirm(`Foram encontradas ${semCodigo.length} peça(s) sem código. Deseja gerar códigos aleatórios para elas agora? (Isso pode levar alguns segundos)`)) {
+      return;
+    }
+
+    const btn = document.getElementById("btn-gerar-codigos");
+    btn.disabled = true;
+    btn.textContent = "Gerando...";
+
+    let salvos = 0;
+    let erros = 0;
+
+    // Passa um a um editando lá no Apps Script
+    for (const p of semCodigo) {
+      const novoCodigo = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const res = await api({ acao: "editar", senha, linha: p.linha, codigo: novoCodigo });
+      if (res.ok) salvos++;
+      else erros++;
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Gerar Códigos Faltantes";
+    toast(`Concluído! ${salvos} códigos gerados. ${erros > 0 ? erros + ' erros.' : ''}`);
+    
+    // Recarrega a tabela para trazer as peças já com os novos códigos atualizados
+    recarregar();
+  }
+  
   /* ── Remover ────────────────────────────────────────── */
   async function removerProduto(linha, btnEl) {
     if (!confirm("Remover este produto?")) return;
